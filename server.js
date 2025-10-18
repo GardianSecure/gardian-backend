@@ -11,6 +11,11 @@ const app = express();
 app.use(cors());
 app.use(bodyParser.json());
 
+// Health check route for Render wake-up
+app.get('/', (req, res) => {
+  res.send('✅ Gardian backend is live.');
+});
+
 const submissions = [];
 
 app.post('/submit', async (req, res) => {
@@ -66,3 +71,4 @@ const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`Gardian backend running on port ${PORT}`);
 });
+
