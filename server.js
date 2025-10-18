@@ -18,6 +18,7 @@ app.get('/', (req, res) => {
 
 const submissions = [];
 
+app.options('/submit', cors());
 app.post('/submit', async (req, res) => {
   const { siteUrl, email, consentGiven } = req.body;
 
@@ -71,4 +72,5 @@ const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`Gardian backend running on port ${PORT}`);
 });
+
 
