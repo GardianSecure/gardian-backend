@@ -10,69 +10,78 @@ const { sendReportEmail } = require('./mailer');
 const app = express();
 app.use(cors());
 app.use(bodyParser.json());
-app.options('/submit', cors());
+app.options('/submit', cors()); // ✅ Handle CORS preflight
 
-// Health check route for Render wake-up
+// ✅ Health check route
 app.get('/', (req, res) => {
   res.send('✅ Gardian backend is live.');
 });
 
 const submissions = [];
 
-app.options('/submit', cors());
 app.post('/submit', async (req, res) => {
-  const { siteUrl, email, consentGiven } = req.body;
+  try {
+    console.log("✅ Received POST /submit", req.body);
 
-  if (!siteUrl || !email || !consentGiven) {
-    return res.status(400).json({ error: 'Missing required fields or consent not given.' });
-  }
+    const { siteUrl, email, consentGiven } = req.body;
 
-  const submission = {
-    id: uuidv4(),
-    siteUrl,
-    email,
-    consentGiven,
-    timestamp: new Date().toISOString()
-  };
+    if (!siteUrl || !email || !consentGiven) {
+      return res.status(400).json({ error: 'Missing required fields or consent not given.' });
+    }
 
-  submissions.push(submission);
-  fs.writeFileSync('submissions.json', JSON.stringify(submissions, null, 2));
+    const submission = {
+      id: uuidv4(),
+      siteUrl,
+      email,
+      consentGiven,
+      timestamp: new Date().toISOString()
+    };
 
-  // Trigger ZAP scan
-  const findings = await runZapScan(siteUrl);
+    submissions.push(submission);
+    fs.writeFileSync('submissions.json', JSON.stringify(submissions, null, 2));
 
-  // Save report
-  const reportPath = path.join(__dirname, 'reports');
-  if (!fs.existsSync(reportPath)) fs.mkdirSync(reportPath);
-  fs.writeFileSync(`${reportPath}/report-${submission.id}.json`, JSON.stringify(findings, null, 2));
-  // Send email with report summary
-  await sendReportEmail(email, {
-  totalFindings: findings.length,
-  high: findings.filter(f => f.risk === 'High').length,
-  medium: findings.filter(f => f.risk === 'Medium').length,
-  low: findings.filter(f => f.risk === 'Low').length,
-  topIssues: findings.slice(0, 3)
-}, submission.id);
+    // 🔍 Run ZAP scan
+    const findings = await runZapScan(siteUrl);
 
-  // Respond with summary
-  res.json({
-    message: 'Scan complete.',
-    id: submission.id,
-    summary: {
+    // 💾 Save report
+    const reportPath = path.join(__dirname, 'reports');
+    if (!fs.existsSync(reportPath)) fs.mkdirSync(reportPath);
+    fs.writeFileSync(`${reportPath}/report-${submission.id}.json`, JSON.stringify(findings, null, 2));
+
+    // 📩 Send email
+    await sendReportEmail(email, {
       totalFindings: findings.length,
       high: findings.filter(f => f.risk === 'High').length,
       medium: findings.filter(f => f.risk === 'Medium').length,
-      low: findings.filter(f => f.risk === 'Low').length
-    },
-    topIssues: findings.slice(0, 3)
-  });
+      low: findings.filter(f => f.risk === 'Low').length,
+      topIssues: findings.slice(0, 3)
+    }, submission.id);
+
+    // ✅ Respond with summary
+    res.json({
+      message: 'Scan complete.',
+      id: submission.id,
+      summary: {
+        totalFindings: findings.length,
+        high: findings.filter(f => f.risk === 'High').length,
+        medium: findings.filter(f => f.risk === 'Medium').length,
+        low: findings.filter(f => f.risk === 'Low').length
+      },
+      topIssues: findings.slice(0, 3)
+    });
+
+  } catch (error) {
+    console.error("❌ Error in /submit:", error);
+    res.status(500).json({ error: 'Internal server error.' });
+  }
+});
+
+// 🚫 Catch-all route for unknown paths
+app.use((req, res) => {
+  res.status(404).send('❌ Route not found');
 });
 
 const PORT = process.env.PORT || 3000;
-
 app.listen(PORT, () => {
   console.log(`Gardian backend running on port ${PORT}`);
 });
-
-
-
