@@ -10,6 +10,7 @@ const { sendReportEmail } = require('./mailer');
 const app = express();
 app.use(cors());
 app.use(bodyParser.json());
+app.options('/submit', cors());
 
 // Health check route for Render wake-up
 app.get('/', (req, res) => {
@@ -72,5 +73,6 @@ const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`Gardian backend running on port ${PORT}`);
 });
+
 
 
