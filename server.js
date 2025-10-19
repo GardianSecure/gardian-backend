@@ -5,7 +5,7 @@ const fs = require('fs');
 const path = require('path');
 const { v4: uuidv4 } = require('uuid');
 const { runZapScan } = require('./zapScan');
-const { sendReportEmail } = require('./mailer');
+const sendReportEmail = require('./mailer');
 
 const app = express();
 app.use(cors());
@@ -85,3 +85,4 @@ const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`Gardian backend running on port ${PORT}`);
 });
+
