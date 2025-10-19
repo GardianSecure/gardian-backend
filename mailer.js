@@ -29,5 +29,7 @@ function sendReportEmail(to, reportSummary, reportId) {
   };
 
   return transporter.sendMail(mailOptions);
-  module.exports = sendReportEmail;
 }
+
+// ✅ Export the function properly
+module.exports = sendReportEmail;
