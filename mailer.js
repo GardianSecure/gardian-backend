@@ -1,17 +1,12 @@
-const nodemailer = require('nodemailer');
+const sgMail = require('@sendgrid/mail');
 
-const transporter = nodemailer.createTransport({
-  service: 'gmail',
-  auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS
-  }
-});
+// ✅ Set your SendGrid API key from environment variable
+sgMail.setApiKey(process.env.SENDGRID_API_KEY);
 
 function sendReportEmail(to, reportSummary, reportId) {
-  const mailOptions = {
-    from: `Gardian <${process.env.EMAIL_USER}>`,
+  const msg = {
     to,
+    from: 'gardiansecure@gmail.com', // ✅ Must match verified sender in SendGrid
     subject: 'Your Gardian Security Scan Report',
     html: `
       <h2>🔐 Gardian Scan Complete</h2>
@@ -28,8 +23,7 @@ function sendReportEmail(to, reportSummary, reportId) {
     `
   };
 
-  return transporter.sendMail(mailOptions);
+  return sgMail.send(msg);
 }
 
-// ✅ Export the function correctly — outside the function
 module.exports = sendReportEmail;
