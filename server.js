@@ -4,28 +4,41 @@ const cors = require('cors');
 const fs = require('fs');
 const path = require('path');
 const { v4: uuidv4 } = require('uuid');
-const { runZapScan } = require('./zapScan');
-const sendReportEmail = require('./mailer');
+const { runZapScan } = require('./zapScan');   // ZAP enabled
+const sendReportEmail = require('./mailer');   // Mailer enabled
 
 const app = express();
 app.use(cors());
 app.use(bodyParser.json());
-app.options('/submit', cors()); // ✅ Handle CORS preflight
+app.options('/submit', cors()); // Handle CORS preflight
 
-// ✅ Health check route
+// Health check route
 app.get('/', (req, res) => {
   res.send('✅ Gardian backend is live.');
 });
 
 const submissions = [];
 
+// Utility: run ZAP with timeout safeguard
+async function runZapWithTimeout(siteUrl, timeoutMs = 60000) {
+  return Promise.race([
+    runZapScan(siteUrl),
+    new Promise((resolve) =>
+      setTimeout(() => {
+        console.warn(`⚠️ ZAP scan timed out after ${timeoutMs}ms`);
+        resolve([{ risk: 'Timeout', issue: 'ZAP scan exceeded time limit' }]);
+      }, timeoutMs)
+    )
+  ]);
+}
+
 app.post('/submit', async (req, res) => {
   try {
     console.log("✅ Received POST /submit", req.body);
 
     const { siteUrl, email, consentGiven } = req.body;
-
     if (!siteUrl || !email || !consentGiven) {
+      console.warn("⚠️ Missing required fields:", { siteUrl, email, consentGiven });
       return res.status(400).json({ error: 'Missing required fields or consent not given.' });
     }
 
@@ -38,24 +51,45 @@ app.post('/submit', async (req, res) => {
     };
 
     submissions.push(submission);
-    fs.writeFileSync('submissions.json', JSON.stringify(submissions, null, 2));
+    try {
+      fs.writeFileSync('submissions.json', JSON.stringify(submissions, null, 2));
+    } catch (fsErr) {
+      console.error("❌ Failed to write submissions.json:", fsErr);
+    }
 
-    // 🔍 Run ZAP scan
-    const findings = await runZapScan(siteUrl);
+    // 🔍 Run ZAP scan with timeout safeguard
+    let findings = [];
+    try {
+      console.log("🔍 Running ZAP scan with timeout...");
+      findings = await runZapWithTimeout(siteUrl, 60000); // 60s timeout
+      console.log("✅ ZAP scan finished:", findings);
+    } catch (zapErr) {
+      console.error("❌ ZAP scan failed:", zapErr);
+      findings = [{ risk: 'Error', issue: 'ZAP scan failed: ' + zapErr.message }];
+    }
 
-    // 💾 Save report
-    const reportPath = path.join(__dirname, 'reports');
-    if (!fs.existsSync(reportPath)) fs.mkdirSync(reportPath);
-    fs.writeFileSync(`${reportPath}/report-${submission.id}.json`, JSON.stringify(findings, null, 2));
+    // 💾 Save report safely
+    try {
+      const reportPath = path.join(__dirname, 'reports');
+      if (!fs.existsSync(reportPath)) fs.mkdirSync(reportPath);
+      fs.writeFileSync(`${reportPath}/report-${submission.id}.json`, JSON.stringify(findings, null, 2));
+    } catch (fsErr) {
+      console.error("❌ Failed to write report file:", fsErr);
+    }
 
-    // 📩 Send email
-    await sendReportEmail(email, {
-      totalFindings: findings.length,
-      high: findings.filter(f => f.risk === 'High').length,
-      medium: findings.filter(f => f.risk === 'Medium').length,
-      low: findings.filter(f => f.risk === 'Low').length,
-      topIssues: findings.slice(0, 3)
-    }, submission.id);
+    // 📩 Send email with safe error handling
+    try {
+      await sendReportEmail(email, {
+        totalFindings: findings.length,
+        high: findings.filter(f => f.risk === 'High').length,
+        medium: findings.filter(f => f.risk === 'Medium').length,
+        low: findings.filter(f => f.risk === 'Low').length,
+        topIssues: findings.slice(0, 3)
+      }, submission.id);
+      console.log("✅ Email sent successfully");
+    } catch (mailErr) {
+      console.error("❌ Failed to send email:", mailErr);
+    }
 
     // ✅ Respond with summary
     res.json({
@@ -76,7 +110,7 @@ app.post('/submit', async (req, res) => {
   }
 });
 
-// 🚫 Catch-all route for unknown paths
+// Catch-all route
 app.use((req, res) => {
   res.status(404).send('❌ Route not found');
 });
@@ -85,4 +119,3 @@ const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`Gardian backend running on port ${PORT}`);
 });
-
