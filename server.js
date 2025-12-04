@@ -20,13 +20,17 @@ app.get('/', (req, res) => {
 const submissions = [];
 
 // Utility: run ZAP with timeout safeguard
-async function runZapWithTimeout(siteUrl, timeoutMs = 60000) {
+async function runZapWithTimeout(siteUrl) {
+  const timeoutMs = process.env.ZAP_TIMEOUT_MS 
+    ? parseInt(process.env.ZAP_TIMEOUT_MS, 10) 
+    : 60000; // default 60s
+
   return Promise.race([
     runZapScan(siteUrl),
     new Promise((resolve) =>
       setTimeout(() => {
         console.warn(`⚠️ ZAP scan timed out after ${timeoutMs}ms`);
-        resolve([{ risk: 'Timeout', issue: 'ZAP scan exceeded time limit' }]);
+        resolve([{ risk: 'Timeout', issue: `ZAP scan exceeded ${timeoutMs}ms limit` }]);
       }, timeoutMs)
     )
   ]);
@@ -61,7 +65,7 @@ app.post('/submit', async (req, res) => {
     let findings = [];
     try {
       console.log("🔍 Running ZAP scan with timeout...");
-      findings = await runZapWithTimeout(siteUrl, 60000); // 60s timeout
+      findings = await runZapWithTimeout(siteUrl);
       console.log("✅ ZAP scan finished:", findings);
     } catch (zapErr) {
       console.error("❌ ZAP scan failed:", zapErr);
