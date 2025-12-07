@@ -6,7 +6,8 @@ sgMail.setApiKey(process.env.SENDGRID_API_KEY);
 function sendReportEmail(to, reportSummary, reportId) {
   const msg = {
     to,
-    from: 'gardiansecure@gmail.com', // ✅ Must match verified sender in SendGrid
+    from: process.env.SENDGRID_VERIFIED_SENDER,
+    replyTo: process.env.SENDGRID_VERIFIED_SENDER,
     subject: 'Your Gardian Security Scan Report',
     html: `
       <h2>🔐 Gardian Scan Complete</h2>
