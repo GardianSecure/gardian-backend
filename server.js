@@ -36,6 +36,8 @@ async function runZapWithTimeout(siteUrl) {
   ]);
 }
 
+const { runZapScan } = require('./zapScan'); // ✅ import your ZAP scan helper
+
 app.post('/submit', async (req, res) => {
   try {
     console.log("✅ Received POST /submit", req.body);
@@ -61,11 +63,11 @@ app.post('/submit', async (req, res) => {
       console.error("❌ Failed to write submissions.json:", fsErr);
     }
 
-    // 🔍 Run ZAP scan with timeout safeguard
+    // 🔍 Run ZAP scan
     let findings = [];
     try {
-      console.log("🔍 Running ZAP scan with timeout...");
-      findings = await runZapWithTimeout(siteUrl);
+      console.log("🔍 Running ZAP scan...");
+      findings = await runZapScan(siteUrl);   // ✅ use your zapScan.js function
       console.log("✅ ZAP scan finished:", findings);
     } catch (zapErr) {
       console.error("❌ ZAP scan failed:", zapErr);
@@ -113,6 +115,7 @@ app.post('/submit', async (req, res) => {
     res.status(500).json({ error: 'Internal server error.' });
   }
 });
+
 
 // Catch-all route
 app.use((req, res) => {
