@@ -36,8 +36,6 @@ async function runZapWithTimeout(siteUrl) {
   ]);
 }
 
-const { runZapScan } = require('./zapScan'); // ✅ import your ZAP scan helper
-
 app.post('/submit', async (req, res) => {
   try {
     console.log("✅ Received POST /submit", req.body);
@@ -126,3 +124,4 @@ const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`Gardian backend running on port ${PORT}`);
 });
+
