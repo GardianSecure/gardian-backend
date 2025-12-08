@@ -4,14 +4,19 @@ const ZAP_API = process.env.ZAP_API_BASE || 'http://localhost:8080';
 const API_KEY = process.env.ZAP_API_KEY || ''; 
 
 // Helper: wait until ZAP daemon is ready
-async function waitForZapReady(retries = 20, delayMs = 1500) {
+async function waitForZapReady(retries = 40, delayMs = 3000) {
   for (let i = 0; i < retries; i++) {
     try {
       const res = await axios.get(`${ZAP_API}/JSON/core/view/urls/`, {
         params: { apikey: API_KEY }
       });
-      if (res.status === 200) return true;
-    } catch (_) {}
+      if (res.status === 200) {
+        console.log("✅ ZAP daemon is ready");  
+        return true;
+      }
+    } catch (_) {
+      console.log(`⏳ Waiting for ZAP... attempt ${i + 1}/${retries}`);
+    }
     await new Promise(resolve => setTimeout(resolve, delayMs));
   }
   throw new Error('ZAP daemon did not become ready in time');
