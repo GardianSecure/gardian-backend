@@ -1,13 +1,11 @@
 #!/bin/bash
-# Start ZAP in daemon mode
-zap.sh -daemon -port 8080 -host 0.0.0.0
+set -e
 
-#Check if it even starts
-echo "ZAP daemon launched"
+echo "🚀 Launching ZAP daemon..."
+$ZAP_HOME/zap.sh -daemon -port 8080 -host 0.0.0.0 -config api.disablekey=true &
 
-# Wait a bit for ZAP to initialize
-sleep 15
+# Give ZAP time to boot
+sleep 40
 
-# Start your backend
+echo "🚀 Launching backend..."
 node server.js
-
