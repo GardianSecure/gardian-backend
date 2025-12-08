@@ -27,7 +27,7 @@ COPY . .
 EXPOSE 8080    # ZAP API
 EXPOSE 3000    # Your Node app (change if your app uses another port)
 
-# 7) Start ZAP first, then your app
-# -host 0.0.0.0 makes ZAP reachable inside the container/network
-CMD zap.sh -daemon -port 8080 -host 0.0.0.0 \
-  && node server.js
+# 7) Copy and run startup script
+COPY start.sh .
+RUN chmod +x start.sh
+CMD ./start.sh
