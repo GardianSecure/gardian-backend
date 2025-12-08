@@ -1,11 +1,27 @@
-// zapScan.js
 const axios = require('axios');
 
-const ZAP_API = 'http://localhost:8080'; // ZAP default port
-const API_KEY = ''; // Add your ZAP API key here if required
+const ZAP_API = process.env.ZAP_API_BASE || 'http://localhost:8080'; 
+const API_KEY = process.env.ZAP_API_KEY || ''; 
 
+// Helper: wait until ZAP daemon is ready
+async function waitForZapReady(retries = 20, delayMs = 1500) {
+  for (let i = 0; i < retries; i++) {
+    try {
+      const res = await axios.get(`${ZAP_API}/JSON/core/view/urls/`, {
+        params: { apikey: API_KEY }
+      });
+      if (res.status === 200) return true;
+    } catch (_) {}
+    await new Promise(resolve => setTimeout(resolve, delayMs));
+  }
+  throw new Error('ZAP daemon did not become ready in time');
+}
+
+// Main scan function
 async function runZapScan(targetUrl) {
   try {
+    await waitForZapReady();
+
     // Start spider scan
     await axios.get(`${ZAP_API}/JSON/spider/action/scan`, {
       params: { url: targetUrl, apikey: API_KEY }
@@ -21,7 +37,7 @@ async function runZapScan(targetUrl) {
       await new Promise(resolve => setTimeout(resolve, 2000));
     }
 
-    // Fetch passive alerts
+    // Fetch alerts
     const alerts = await axios.get(`${ZAP_API}/JSON/core/view/alerts`, {
       params: { baseurl: targetUrl, apikey: API_KEY }
     });
