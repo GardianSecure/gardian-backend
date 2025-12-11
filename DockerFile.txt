@@ -30,4 +30,4 @@ EXPOSE 3000    # Your Node app (change if your app uses another port)
 # 7) Copy and run startup script
 COPY start.sh .
 RUN chmod +x start.sh
-CMD ./start.sh
+CMD ["./start.sh"]
