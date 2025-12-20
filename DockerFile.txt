@@ -1,5 +1,7 @@
+# ✅ Base image with ZAP preinstalled
 FROM owasp/zap2docker-stable
 
+# Set working directory for your backend
 WORKDIR /app
 
 # Copy backend dependencies
@@ -13,8 +15,9 @@ COPY . .
 COPY start.sh .
 RUN chmod +x start.sh
 
-CMD ["./start.sh"]
+# Expose ports
+EXPOSE 8080   # ZAP API
+EXPOSE 3000   # Node backend
 
-node_modules
-.git
-*.log
+# Run startup script
+CMD ["./start.sh"]
