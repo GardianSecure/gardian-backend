@@ -1,63 +1,46 @@
-const axios = require('axios');
+// zapScan.js
+const axios = require("axios");
+const ZAP_API = "http://localhost:8080";
 
-const ZAP_API = process.env.ZAP_API_BASE || 'http://localhost:8080'; 
-const API_KEY = process.env.ZAP_API_KEY || ''; 
-
-// Helper: wait until ZAP daemon is ready
-async function waitForZapReady(retries = 40, delayMs = 3000) {
-  for (let i = 0; i < retries; i++) {
+async function runZapScan(siteUrl) {
+  // Wait until ZAP is ready
+  for (let i = 1; i <= 40; i++) {
     try {
-      const res = await axios.get(`${ZAP_API}/JSON/core/view/urls/`, {
-        params: { apikey: API_KEY }
-      });
-      if (res.status === 200) {
-        console.log("✅ ZAP daemon is ready");  
-        return true;
+      const res = await axios.get(`${ZAP_API}/JSON/core/view/version/`);
+      if (res.data) {
+        console.log("✅ ZAP daemon is ready");
+        break;
       }
-    } catch (_) {
-      console.log(`⏳ Waiting for ZAP... attempt ${i + 1}/${retries}`);
+    } catch {
+      console.log(`⏳ Waiting for ZAP... attempt ${i}/40`);
+      await new Promise(r => setTimeout(r, 3000));
     }
-    await new Promise(resolve => setTimeout(resolve, delayMs));
+    if (i === 40) throw new Error("ZAP daemon did not become ready in time");
   }
-  throw new Error('ZAP daemon did not become ready in time');
-}
 
-// Main scan function
-async function runZapScan(targetUrl) {
-  try {
-    await waitForZapReady();
+  // Start active scan
+  const scanRes = await axios.get(
+    `${ZAP_API}/JSON/ascan/action/scan/?url=${encodeURIComponent(siteUrl)}`
+  );
+  const scanId = scanRes.data.scan;
+  console.log(`🔍 Scan started with ID: ${scanId}`);
 
-    // Start spider scan
-    await axios.get(`${ZAP_API}/JSON/spider/action/scan`, {
-      params: { url: targetUrl, apikey: API_KEY }
-    });
-
-    // Wait for spider to complete
-    let status = '0';
-    while (status !== '100') {
-      const res = await axios.get(`${ZAP_API}/JSON/spider/view/status`, {
-        params: { apikey: API_KEY }
-      });
-      status = res.data.status;
-      await new Promise(resolve => setTimeout(resolve, 2000));
-    }
-
-    // Fetch alerts
-    const alerts = await axios.get(`${ZAP_API}/JSON/core/view/alerts`, {
-      params: { baseurl: targetUrl, apikey: API_KEY }
-    });
-
-    return alerts.data.alerts.map(alert => ({
-      name: alert.alert,
-      risk: alert.risk,
-      url: alert.url,
-      description: alert.description,
-      solution: alert.solution
-    }));
-  } catch (err) {
-    console.error('ZAP scan failed:', err.message);
-    return [];
+  // Poll until scan completes
+  let progress = 0;
+  while (progress < 100) {
+    const statusRes = await axios.get(
+      `${ZAP_API}/JSON/ascan/view/status/?scanId=${scanId}`
+    );
+    progress = parseInt(statusRes.data.status, 10);
+    console.log(`⏳ Scan progress: ${progress}%`);
+    await new Promise(r => setTimeout(r, 5000));
   }
+
+  // Fetch alerts
+  const alertsRes = await axios.get(
+    `${ZAP_API}/JSON/core/view/alerts/?baseurl=${encodeURIComponent(siteUrl)}`
+  );
+  return alertsRes.data.alerts || [];
 }
 
 module.exports = { runZapScan };
