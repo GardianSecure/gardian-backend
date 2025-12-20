@@ -1,33 +1,16 @@
-# 1) Base image with Java (required by ZAP)
-FROM eclipse-temurin:17-jre-jammy
+FROM owasp/zap2docker-stable
 
-# 2) Install dependencies
-RUN apt-get update && apt-get install -y wget unzip curl gnupg \
-    && rm -rf /var/lib/apt/lists/*
-
-# 3) Download and install ZAP (version can be bumped later)
-RUN wget https://github.com/zaproxy/zaproxy/releases/download/v2.15.0/ZAP_2_15_0_unix.zip \
-    && unzip ZAP_2_15_0_unix.zip -d /opt \
-    && rm ZAP_2_15_0_unix.zip
-ENV ZAP_HOME=/opt/ZAP_2.15.0
-ENV PATH="${ZAP_HOME}:${PATH}"
-
-# 4) Install Node.js (use your preferred version)
-RUN curl -fsSL https://deb.nodesource.com/setup_18.x | bash - \
-    && apt-get install -y nodejs \
-    && rm -rf /var/lib/apt/lists/*
-
-# 5) App setup
 WORKDIR /app
+
+# Copy backend dependencies
 COPY package*.json ./
-RUN npm ci --only=production
+RUN npm install --only=production
+
+# Copy backend code
 COPY . .
 
-# 6) Expose your backend port and ZAP daemon port
-EXPOSE 8080    # ZAP API
-EXPOSE 3000    # Your Node app (change if your app uses another port)
-
-# 7) Copy and run startup script
+# Copy startup script
 COPY start.sh .
 RUN chmod +x start.sh
+
 CMD ["./start.sh"]
