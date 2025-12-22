@@ -1,12 +1,15 @@
 // zapScan.js
 const axios = require("axios");
-const ZAP_API = "http://localhost:8080";
+
+// ZAP runs inside the same container, so use localhost
+const ZAP_API = "http://127.0.0.1:8080";
+const API_KEY = "gardian123"; // must match your start.sh config
 
 async function runZapScan(siteUrl) {
   // Wait until ZAP is ready
   for (let i = 1; i <= 40; i++) {
     try {
-      const res = await axios.get(`${ZAP_API}/JSON/core/view/version/`);
+      const res = await axios.get(`${ZAP_API}/JSON/core/view/version/?apikey=${API_KEY}`);
       if (res.data) {
         console.log("✅ ZAP daemon is ready");
         break;
@@ -20,7 +23,7 @@ async function runZapScan(siteUrl) {
 
   // Start active scan
   const scanRes = await axios.get(
-    `${ZAP_API}/JSON/ascan/action/scan/?url=${encodeURIComponent(siteUrl)}`
+    `${ZAP_API}/JSON/ascan/action/scan/?apikey=${API_KEY}&url=${encodeURIComponent(siteUrl)}`
   );
   const scanId = scanRes.data.scan;
   console.log(`🔍 Scan started with ID: ${scanId}`);
@@ -29,7 +32,7 @@ async function runZapScan(siteUrl) {
   let progress = 0;
   while (progress < 100) {
     const statusRes = await axios.get(
-      `${ZAP_API}/JSON/ascan/view/status/?scanId=${scanId}`
+      `${ZAP_API}/JSON/ascan/view/status/?apikey=${API_KEY}&scanId=${scanId}`
     );
     progress = parseInt(statusRes.data.status, 10);
     console.log(`⏳ Scan progress: ${progress}%`);
@@ -38,7 +41,7 @@ async function runZapScan(siteUrl) {
 
   // Fetch alerts
   const alertsRes = await axios.get(
-    `${ZAP_API}/JSON/core/view/alerts/?baseurl=${encodeURIComponent(siteUrl)}`
+    `${ZAP_API}/JSON/core/view/alerts/?apikey=${API_KEY}&baseurl=${encodeURIComponent(siteUrl)}`
   );
   return alertsRes.data.alerts || [];
 }
