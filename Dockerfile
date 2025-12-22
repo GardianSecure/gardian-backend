@@ -28,4 +28,4 @@ EXPOSE 3000
 RUN chmod +x /app/start.sh
 
 # Default start command
-CMD ["./start.sh"]
+CMD ["bash", "./start.sh"]
