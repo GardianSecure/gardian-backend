@@ -123,18 +123,17 @@ app.post("/submit", async (req, res) => {
   }
 });
 
-// Catch-all route
-app.use((req, res) => {
-  res.status(404).send("❌ Route not found");
-});
-
 // Health check endpoint for Render
 app.get('/health', (req, res) => {
   res.status(200).send('OK');
+});
+
+// Catch-all route
+app.use((req, res) => {
+  res.status(404).send("❌ Route not found");
 });
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`Gardian backend running on port ${PORT}`);
 });
-
