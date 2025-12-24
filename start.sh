@@ -1,9 +1,9 @@
 #!/bin/bash
 set -e
 
-echo "🚀 Launching ZAP daemon on port $PORT..."
+echo "🚀 Launching ZAP daemon on port 8080..."
 /opt/zap/zap.sh -daemon \
-  -port $PORT \
+  -port 8080 \
   -host 0.0.0.0 \
   -config api.key=gardian123 \
   -config api.addrs.addr.name=.* \
@@ -12,5 +12,5 @@ echo "🚀 Launching ZAP daemon on port $PORT..."
 # Give ZAP enough time to boot
 sleep 10
 
-echo "🚀 Launching backend on port $PORT..."
+echo "🚀 Launching backend on Render-assigned port $PORT..."
 node server.js
