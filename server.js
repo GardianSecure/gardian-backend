@@ -133,7 +133,8 @@ app.use((req, res) => {
   res.status(404).send("❌ Route not found");
 });
 
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 10000;
 app.listen(PORT, () => {
   console.log(`Gardian backend running on port ${PORT}`);
 });
+
