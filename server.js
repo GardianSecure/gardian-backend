@@ -134,8 +134,9 @@ app.use((req, res) => {
 });
 
 const PORT = 10000;
-app.listen(PORT, () => {
-  console.log(`Gardian backend running on port ${PORT}`);
+app.listen(PORT, '0.0.0.0', () => {
+  console.log(`✅ Gardian backend running on port ${PORT}`);
 });
+
 
 
