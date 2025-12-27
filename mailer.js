@@ -1,9 +1,16 @@
 const sgMail = require('@sendgrid/mail');
 
-// ✅ Set your SendGrid API key from environment variable
+// ✅ Ensure API key exists
+if (!process.env.SENDGRID_API_KEY) {
+  throw new Error("Missing SENDGRID_API_KEY environment variable");
+}
 sgMail.setApiKey(process.env.SENDGRID_API_KEY);
 
 function sendReportEmail(to, reportSummary, reportId) {
+  if (!process.env.SENDGRID_VERIFIED_SENDER) {
+    throw new Error("Missing SENDGRID_VERIFIED_SENDER environment variable");
+  }
+
   const msg = {
     to,
     from: process.env.SENDGRID_VERIFIED_SENDER,
@@ -24,7 +31,15 @@ function sendReportEmail(to, reportSummary, reportId) {
     `
   };
 
-  return sgMail.send(msg);
+  return sgMail
+    .send(msg)
+    .then(() => {
+      console.log(`✅ Report email sent to ${to}`);
+    })
+    .catch(error => {
+      console.error("❌ Failed to send report email:", error);
+      throw error;
+    });
 }
 
 module.exports = sendReportEmail;
