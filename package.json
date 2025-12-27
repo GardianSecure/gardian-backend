@@ -8,6 +8,6 @@
     "uuid": "^11.1.0"
   },
   "scripts": {
-    "start": "node server.js"
+    "start": "node launch.js"
   }
 }
