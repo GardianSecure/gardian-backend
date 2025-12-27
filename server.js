@@ -5,14 +5,14 @@ const fs = require("fs");
 const path = require("path");
 const { v4: uuidv4 } = require("uuid");
 
-const { runZapScan } = require("./zapScan");   // ✅ corrected import
-const sendReportEmail = require("./mailer");  // Email integration
+const { runZapScan } = require("./zapScan");
+const sendReportEmail = require("./mailer");
 
 const app = express();
 app.use(cors());
 app.use(bodyParser.json());
 
-// Health check endpoint for Render
+// Health check endpoint
 app.get("/health", (req, res) => {
   res.status(200).send("OK");
 });
@@ -37,11 +37,11 @@ async function runZapWithTimeout(siteUrl) {
   ]);
 }
 
-// ✅ Scan endpoint (renamed from /submit to /scan)
+// Scan endpoint
 app.post("/scan", async (req, res) => {
   try {
     const { siteUrl, email, consentGiven } = req.body;
-    console.log("📩 Incoming scan request:", req.body); // log payload
+    console.log("📩 Incoming scan request:", req.body);
 
     if (!siteUrl || !email || !consentGiven) {
       return res.status(400).json({ error: "Missing required fields or consent not given." });
@@ -62,12 +62,13 @@ app.post("/scan", async (req, res) => {
       console.error("❌ Failed to write submissions.json:", fsErr);
     }
 
-    // Run ZAP scan
+    // Run ZAP scan with safe fallback
     let findings = [];
     try {
       findings = await runZapWithTimeout(siteUrl);
     } catch (zapErr) {
-      findings = [{ risk: "Error", issue: "ZAP scan failed: " + zapErr.message }];
+      console.error("❌ Internal ZAP error:", zapErr.message);
+      findings = [{ risk: "Info", issue: "Scan could not complete, please try again later." }];
     }
 
     // Save report
@@ -99,6 +100,7 @@ app.post("/scan", async (req, res) => {
       console.error("❌ Failed to send email:", mailErr);
     }
 
+    // Always return a clean response
     res.json({
       message: "Scan complete.",
       id: submission.id,
@@ -109,6 +111,9 @@ app.post("/scan", async (req, res) => {
         low: findings.filter((f) => f.risk === "Low").length,
       },
       topIssues: findings.slice(0, 3),
+      status: findings.some(f => f.risk === "Info" && f.issue.includes("could not complete"))
+        ? "partial"
+        : "completed"
     });
   } catch (error) {
     res.status(500).json({ error: "Internal server error." });
@@ -124,4 +129,3 @@ const PORT = process.env.PORT || 10000;
 app.listen(PORT, "0.0.0.0", () => {
   console.log(`✅ GardianX backend running on port ${PORT}`);
 });
-
