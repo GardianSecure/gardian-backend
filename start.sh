@@ -1,2 +1,3 @@
 #!/bin/bash
-echo "start.sh disabled, use launch.js instead"
+echo "start.sh forwarding to launch.js..."
+npm start
