@@ -16,3 +16,17 @@ yarn-error.log*
 # OS-specific
 .DS_Store
 Thumbs.db
+
+# Ignore system and installer files
+*.exe
+*.msi
+*.zip
+*.tar
+*.gz
+
+# Node.js
+node_modules/
+.env
+*.log
+dist/
+build/
