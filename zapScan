@@ -3,13 +3,15 @@ const axios = require("axios");
 
 // ZAP runs inside the same container, so use localhost
 const ZAP_API = "http://127.0.0.1:8080";
-const API_KEY = process.env.ZAP_API_KEY || "gardian123"; // must match start.sh config
+const API_KEY = process.env.ZAP_API_KEY || "gardian123"; // must match launch.js config
 
 async function runZapScan(siteUrl) {
   // Wait until ZAP is ready
   for (let i = 1; i <= 40; i++) {
     try {
-      const res = await axios.get(`${ZAP_API}/JSON/core/view/version/?apikey=${API_KEY}`);
+      const res = await axios.get(`${ZAP_API}/JSON/core/view/version/`, {
+        params: { apikey: API_KEY }
+      });
       if (res.data) {
         console.log("✅ ZAP daemon is ready");
         break;
@@ -21,10 +23,16 @@ async function runZapScan(siteUrl) {
     if (i === 40) throw new Error("ZAP daemon did not become ready in time");
   }
 
-  // Start active scan
-  const scanRes = await axios.get(
-    `${ZAP_API}/JSON/ascan/action/scan/?apikey=${API_KEY}&url=${encodeURIComponent(siteUrl)}`
-  );
+  // Start active scan (correct params)
+  const scanRes = await axios.get(`${ZAP_API}/JSON/ascan/action/scan/`, {
+    params: {
+      apikey: API_KEY,
+      url: siteUrl,
+      recurse: true,
+      inScopeOnly: false
+    }
+  });
+
   if (!scanRes.data.scan) {
     throw new Error(`❌ Active scan failed: ${JSON.stringify(scanRes.data)}`);
   }
@@ -35,9 +43,9 @@ async function runZapScan(siteUrl) {
   let progress = 0;
   const timeout = Date.now() + 10 * 60 * 1000; // 10 minutes
   while (progress < 100 && Date.now() < timeout) {
-    const statusRes = await axios.get(
-      `${ZAP_API}/JSON/ascan/view/status/?apikey=${API_KEY}&scanId=${scanId}`
-    );
+    const statusRes = await axios.get(`${ZAP_API}/JSON/ascan/view/status/`, {
+      params: { apikey: API_KEY, scanId }
+    });
     progress = parseInt(statusRes.data.status, 10);
     console.log(`⏳ Scan progress: ${progress}%`);
     await new Promise(r => setTimeout(r, 5000));
@@ -47,9 +55,11 @@ async function runZapScan(siteUrl) {
   }
 
   // Fetch alerts (correct endpoint)
-  const alertsRes = await axios.get(
-    `${ZAP_API}/JSON/alert/view/alerts/?apikey=${API_KEY}&baseurl=${encodeURIComponent(siteUrl)}`
-  );
+  const alertsRes = await axios.get(`${ZAP_API}/JSON/alert/view/alerts/`, {
+    params: { apikey: API_KEY, baseurl: siteUrl }
+  });
+
+  console.log(`✅ Retrieved ${alertsRes.data.alerts?.length || 0} alerts`);
   return alertsRes.data.alerts || [];
 }
 
