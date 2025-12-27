@@ -24,8 +24,5 @@ COPY . .
 ENV PORT=10000
 EXPOSE 10000
 
-# Ensure start.sh is executable
-RUN chmod +x /app/start.sh
-
-# Default start command
-CMD ["bash", "./start.sh"]
+# Default start command: run launch.js via npm
+CMD ["npm", "start"]
