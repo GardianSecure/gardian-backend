@@ -34,7 +34,7 @@ async function runZapScan(siteUrl) {
   });
 
   if (!scanRes.data.scan) {
-    throw new Error(`❌ Active scan failed: ${JSON.stringify(scanRes.data)}`);
+    throw new Error(`Active scan could not start: ${JSON.stringify(scanRes.data)}`);
   }
   const scanId = scanRes.data.scan;
   console.log(`🔍 Scan started with ID: ${scanId}`);
@@ -54,7 +54,7 @@ async function runZapScan(siteUrl) {
     console.warn("⚠️ Active scan timed out");
   }
 
-  // Fetch alerts (correct endpoint)
+  // Fetch alerts
   const alertsRes = await axios.get(`${ZAP_API}/JSON/alert/view/alerts/`, {
     params: { apikey: API_KEY, baseurl: siteUrl }
   });
