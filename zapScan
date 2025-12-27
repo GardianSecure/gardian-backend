@@ -3,7 +3,7 @@ const axios = require("axios");
 
 // ZAP runs inside the same container, so use localhost
 const ZAP_API = "http://127.0.0.1:8080";
-const API_KEY = "gardian123"; // must match your start.sh config
+const API_KEY = process.env.ZAP_API_KEY || "gardian123"; // must match start.sh config
 
 async function runZapScan(siteUrl) {
   // Wait until ZAP is ready
@@ -25,12 +25,16 @@ async function runZapScan(siteUrl) {
   const scanRes = await axios.get(
     `${ZAP_API}/JSON/ascan/action/scan/?apikey=${API_KEY}&url=${encodeURIComponent(siteUrl)}`
   );
+  if (!scanRes.data.scan) {
+    throw new Error(`❌ Active scan failed: ${JSON.stringify(scanRes.data)}`);
+  }
   const scanId = scanRes.data.scan;
   console.log(`🔍 Scan started with ID: ${scanId}`);
 
-  // Poll until scan completes
+  // Poll until scan completes (with timeout)
   let progress = 0;
-  while (progress < 100) {
+  const timeout = Date.now() + 10 * 60 * 1000; // 10 minutes
+  while (progress < 100 && Date.now() < timeout) {
     const statusRes = await axios.get(
       `${ZAP_API}/JSON/ascan/view/status/?apikey=${API_KEY}&scanId=${scanId}`
     );
@@ -38,10 +42,13 @@ async function runZapScan(siteUrl) {
     console.log(`⏳ Scan progress: ${progress}%`);
     await new Promise(r => setTimeout(r, 5000));
   }
+  if (progress < 100) {
+    console.warn("⚠️ Active scan timed out");
+  }
 
-  // Fetch alerts
+  // Fetch alerts (correct endpoint)
   const alertsRes = await axios.get(
-    `${ZAP_API}/JSON/core/view/alerts/?apikey=${API_KEY}&baseurl=${encodeURIComponent(siteUrl)}`
+    `${ZAP_API}/JSON/alert/view/alerts/?apikey=${API_KEY}&baseurl=${encodeURIComponent(siteUrl)}`
   );
   return alertsRes.data.alerts || [];
 }
