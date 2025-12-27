@@ -120,6 +120,10 @@ app.post("/scan", async (req, res) => {
   }
 });
 
+app.get("/health", (req, res) => {
+  res.status(200).send("OK");
+});
+
 // Catch-all route
 app.use((req, res) => {
   res.status(404).send("❌ Route not found");
@@ -129,3 +133,4 @@ const PORT = process.env.PORT || 10000;
 app.listen(PORT, "0.0.0.0", () => {
   console.log(`✅ GardianX backend running on port ${PORT}`);
 });
+
