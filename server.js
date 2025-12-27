@@ -37,10 +37,12 @@ async function runZapWithTimeout(siteUrl) {
   ]);
 }
 
-// Submission endpoint
-app.post("/submit", async (req, res) => {
+// ✅ Scan endpoint (renamed from /submit to /scan)
+app.post("/scan", async (req, res) => {
   try {
     const { siteUrl, email, consentGiven } = req.body;
+    console.log("📩 Incoming scan request:", req.body); // log payload
+
     if (!siteUrl || !email || !consentGiven) {
       return res.status(400).json({ error: "Missing required fields or consent not given." });
     }
@@ -113,17 +115,12 @@ app.post("/submit", async (req, res) => {
   }
 });
 
-app.get("/", (req, res) => {
-  res.send("🚀 GardianX backend is live and healthy");
-});
-
 // Catch-all route
 app.use((req, res) => {
   res.status(404).send("❌ Route not found");
 });
 
 const PORT = process.env.PORT || 10000;
-app.listen(PORT, '0.0.0.0', () => {
+app.listen(PORT, "0.0.0.0", () => {
   console.log(`✅ GardianX backend running on port ${PORT}`);
 });
-
