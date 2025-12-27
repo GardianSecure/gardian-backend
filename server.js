@@ -5,7 +5,7 @@ const fs = require("fs");
 const path = require("path");
 const { v4: uuidv4 } = require("uuid");
 
-const runZapScan = require("./zapScan");   // ✅ corrected import
+const { runZapScan } = require("./zapScan");   // ✅ corrected import
 const sendReportEmail = require("./mailer");  // Email integration
 
 const app = express();
@@ -124,3 +124,4 @@ const PORT = process.env.PORT || 10000;
 app.listen(PORT, "0.0.0.0", () => {
   console.log(`✅ GardianX backend running on port ${PORT}`);
 });
+
