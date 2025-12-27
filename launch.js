@@ -25,5 +25,6 @@ setTimeout(() => {
     "-config", "api.addrs.addr.regex=true"
   ], { stdio: "inherit" });
 
+  // Keep launch.js alive
+  setInterval(() => {}, 1000);
 }, 5000);
-
