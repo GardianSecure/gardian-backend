@@ -21,5 +21,4 @@ else
   echo "✅ Health check passed"
 fi
 
-# Keep container alive
 wait
