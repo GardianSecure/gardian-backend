@@ -24,4 +24,10 @@ setTimeout(() => {
     "-config", "api.addrs.addr.name=.*",
     "-config", "api.addrs.addr.regex=true"
   ], { stdio: "inherit" });
+
+  // Exit launch.js cleanly after setup
+  setTimeout(() => {
+    console.log("✅ launch.js completed setup");
+    process.exit(0);
+  }, 10000);
 }, 5000);
