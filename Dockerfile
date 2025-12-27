@@ -13,14 +13,15 @@ RUN apt-get update && apt-get install -y wget tar openjdk-17-jre-headless \
 # Set working directory
 WORKDIR /app
 
-# Install backend dependencies (cache-friendly)
+# Install backend dependencies
 COPY package*.json ./
-RUN npm install --only=production
+RUN npm install
 
 # Copy the rest of the backend
 COPY . .
 
-# Expose ports
+# Set port explicitly
+ENV PORT=10000
 EXPOSE 10000
 
 # Ensure start.sh is executable
@@ -28,4 +29,3 @@ RUN chmod +x /app/start.sh
 
 # Default start command
 CMD ["bash", "./start.sh"]
-
