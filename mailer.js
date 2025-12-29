@@ -11,11 +11,12 @@ function sendReportEmail(to, reportSummary, reportId) {
     throw new Error("Missing SENDGRID_VERIFIED_SENDER environment variable");
   }
 
-  const issuesHtml = (reportSummary.topIssues || []).map(issue => `
+  const topIssues = Array.isArray(reportSummary.topIssues) ? reportSummary.topIssues : [];
+  const issuesHtml = topIssues.map(issue => `
     <li>
-      <strong>${issue.risk}:</strong> ${issue.name || issue.title}
+      <strong>${issue.risk}:</strong> ${issue.name || issue.title || "Unnamed issue"}
       <br/>
-      <em>${issue.plainSummary || issue.description || ""}</em>
+      <em>${issue.plainSummary || issue.description || "No summary available."}</em>
       ${issue.reference ? `<br/><a href="${issue.reference}">Learn more</a>` : ""}
     </li>
   `).join("");
