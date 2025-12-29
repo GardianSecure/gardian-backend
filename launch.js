@@ -1,3 +1,4 @@
+// launch.js
 const { spawn, exec } = require("child_process");
 
 console.log("🚀 Launching backend on Render-assigned port:", process.env.PORT);
@@ -22,9 +23,10 @@ setTimeout(() => {
     "-host", "0.0.0.0",
     "-config", "api.key=gardian123",
     "-config", "api.addrs.addr.name=.*",
-    "-config", "api.addrs.addr.regex=true"
+    "-config", "api.addrs.addr.regex=true",
+    "-config", "addon.autoupdate.onStart=false" // 🚀 disables slow add-on auto-update
   ], { stdio: "inherit" });
 
-  // Keep launch.js alive
+  // Keep launch.js alive so Render doesn't kill it
   setInterval(() => {}, 1000);
 }, 5000);
