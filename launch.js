@@ -24,9 +24,16 @@ setTimeout(() => {
     "-config", "api.key=gardian123",
     "-config", "api.addrs.addr.name=.*",
     "-config", "api.addrs.addr.regex=true",
-    "-config", "addon.autoupdate.onStart=false" // 🚀 disables slow add-on auto-update
+
+    // 🚀 Disable auto-update completely
+    "-config", "addon.autoupdate.onStart=false",
+    "-config", "addon.autoupdate.downloadNewVersions=false",
+    "-config", "addon.autoupdate.checkOnStart=false",
+
+    // 🚀 Disable Selenium/browser integration (no Firefox errors)
+    "-config", "selenium.enabled=false"
   ], { stdio: "inherit" });
 
   // Keep launch.js alive so Render doesn't kill it
   setInterval(() => {}, 1000);
-}, 5000);
+}, 15000); // wait 15s before health check
