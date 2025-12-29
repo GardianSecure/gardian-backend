@@ -1,6 +1,5 @@
 const sgMail = require('@sendgrid/mail');
 
-// ✅ Ensure API key exists
 if (!process.env.SENDGRID_API_KEY) {
   throw new Error("Missing SENDGRID_API_KEY environment variable");
 }
@@ -11,7 +10,6 @@ function sendReportEmail(to, reportSummary, reportId) {
     throw new Error("Missing SENDGRID_VERIFIED_SENDER environment variable");
   }
 
-  // Build a nicer HTML list of top issues
   const issuesHtml = reportSummary.topIssues.map(issue => `
     <li>
       <strong>${issue.risk}:</strong> ${issue.name || issue.title}
@@ -25,9 +23,9 @@ function sendReportEmail(to, reportSummary, reportId) {
     to,
     from: process.env.SENDGRID_VERIFIED_SENDER,
     replyTo: process.env.SENDGRID_VERIFIED_SENDER,
-    subject: 'Your GardianX Security Scan Report',
+    subject: 'Your Gardian Security Scan Report',
     html: `
-      <h2>🔐 GardianX Scan ${reportSummary.status || "Complete"}</h2>
+      <h2>🔐 Gardian Scan ${reportSummary.status || "Complete"}</h2>
       <p>Here’s a quick summary:</p>
       <ul>
         <li><strong>Total Findings:</strong> ${reportSummary.totalFindings}</li>
