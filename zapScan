@@ -4,76 +4,129 @@ const axios = require("axios");
 const ZAP_API = "http://127.0.0.1:8080";
 const API_KEY = process.env.ZAP_API_KEY || "gardian123";
 
-async function runZapScan(siteUrl) {
-  // Wait until ZAP is ready (max 3 minutes, break early if ready)
-  const timeout = Date.now() + 3 * 60 * 1000;
-  let ready = false;
+// Helper: sleep
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
-  while (Date.now() < timeout && !ready) {
+// Helper: wait for ZAP API readiness
+async function waitForZapReady(maxMs = 3 * 60 * 1000) {
+  const deadline = Date.now() + maxMs;
+  while (Date.now() < deadline) {
     try {
       const res = await axios.get(`${ZAP_API}/JSON/core/view/version/`, {
         params: { apikey: API_KEY }
       });
       if (res.data) {
-        console.log("✅ ZAP is fully initialized and ready to scan");
-        ready = true;
-        break;
+        console.log("✅ ZAP API is online:", res.data);
+        return true;
       }
     } catch (err) {
-      console.log(`⏳ Waiting for ZAP... ${err.message}`);
+      console.log(`⏳ Waiting for ZAP API... ${err.message}`);
     }
-    await new Promise(r => setTimeout(r, 3000));
+    await sleep(3000);
   }
+  throw new Error("❌ ZAP API did not become ready within 3 minutes");
+}
 
-  if (!ready) {
-    throw new Error("❌ ZAP daemon did not become ready within 3 minutes");
+// Helper: confirm required add-ons are loaded
+async function waitForAddons(addons = ["spider", "ascan"], maxMs = 60 * 1000) {
+  const deadline = Date.now() + maxMs;
+  while (Date.now() < deadline) {
+    try {
+      // Use the "core/view/loadedAddons" endpoint (list loaded add-ons)
+      const res = await axios.get(`${ZAP_API}/JSON/core/view/loadedAddons/`, {
+        params: { apikey: API_KEY }
+      });
+      const loaded = (res.data?.loadedAddons || []).map((a) => a.id || a);
+      const allPresent = addons.every((id) => loaded.includes(id));
+      if (allPresent) {
+        console.log("✅ Required add-ons loaded:", addons.join(", "));
+        return true;
+      }
+      console.log("⏳ Add-ons not ready yet. Loaded:", loaded.join(", "));
+    } catch (err) {
+      console.log(`⏳ Checking add-ons... ${err.message}`);
+    }
+    await sleep(3000);
   }
+  throw new Error(`❌ Required add-ons not loaded in time: ${addons.join(", ")}`);
+}
 
-  // 🕷️ Spider the site first
+async function runZapScan(siteUrl) {
+  // 1) Wait for ZAP API to be online
+  await waitForZapReady();
+
+  // 2) Ensure spider + ascan add-ons are loaded
+  await waitForAddons(["spider", "ascan"]);
+
+  // 3) Spider the target
   console.log("🕷️ Starting spider to crawl site...");
-  const spiderRes = await axios.get(`${ZAP_API}/JSON/spider/action/scan/`, {
-    params: {
-      apikey: API_KEY,
-      url: siteUrl,
-      recurse: true
-    }
-  });
-  const spiderId = spiderRes.data.scan;
-  console.log(`🕷️ Spider started with ID: ${spiderId}`);
-
-  // Wait for spider to complete
-  let spiderProgress = 0;
-  while (spiderProgress < 100) {
-    const statusRes = await axios.get(`${ZAP_API}/JSON/spider/view/status/`, {
-      params: { apikey: API_KEY, scanId: spiderId }
+  let spiderId;
+  try {
+    const spiderRes = await axios.get(`${ZAP_API}/JSON/spider/action/scan/`, {
+      params: {
+        apikey: API_KEY,
+        url: siteUrl,
+        recurse: true
+      }
     });
-    spiderProgress = parseInt(statusRes.data.status, 10);
-    console.log(`⏳ Spider progress: ${spiderProgress}%`);
-    await new Promise(r => setTimeout(r, 3000));
-  }
-  console.log("✅ Spider completed");
-
-  // 🔍 Start active scan
-  const scanRes = await axios.get(`${ZAP_API}/JSON/ascan/action/scan/`, {
-    params: {
-      apikey: API_KEY,
-      url: siteUrl,
-      recurse: true,
-      inScopeOnly: false
+    if (!spiderRes.data?.scan) {
+      throw new Error(`Spider start failed: ${JSON.stringify(spiderRes.data)}`);
     }
-  });
-
-  if (!scanRes.data.scan) {
-    throw new Error(`❌ Active scan failed: ${JSON.stringify(scanRes.data)}`);
+    spiderId = spiderRes.data.scan;
+    console.log(`🕷️ Spider started with ID: ${spiderId}`);
+  } catch (err) {
+    // If NO_IMPLEMENTOR ever happens, it means spider wasn’t loaded—our wait fixes that.
+    console.error(`❌ Spider start error: ${err.message}`);
+    return { status: "error", alerts: [], error: "Spider could not start" };
   }
 
-  const scanId = scanRes.data.scan;
-  console.log(`🔍 Active scan started with ID: ${scanId}`);
+  // 4) Wait for spider completion
+  try {
+    let spiderProgress = 0;
+    const spiderDeadline = Date.now() + 5 * 60 * 1000; // 5 minutes
+    while (spiderProgress < 100 && Date.now() < spiderDeadline) {
+      const statusRes = await axios.get(`${ZAP_API}/JSON/spider/view/status/`, {
+        params: { apikey: API_KEY, scanId: spiderId }
+      });
+      spiderProgress = parseInt(statusRes.data.status, 10);
+      console.log(`⏳ Spider progress: ${spiderProgress}%`);
+      await sleep(3000);
+    }
+    if (spiderProgress < 100) {
+      console.warn("⚠️ Spider timed out before reaching 100%");
+    } else {
+      console.log("✅ Spider completed");
+    }
+  } catch (err) {
+    console.error(`❌ Spider status error: ${err.message}`);
+  }
 
-  // ⏳ Poll until scan completes
+  // 5) Start active scan
+  console.log("🔍 Starting active scan...");
+  let scanId;
+  try {
+    const scanRes = await axios.get(`${ZAP_API}/JSON/ascan/action/scan/`, {
+      params: {
+        apikey: API_KEY,
+        url: siteUrl,
+        recurse: true,
+        inScopeOnly: false
+      }
+    });
+    if (!scanRes.data?.scan) {
+      throw new Error(`Active scan start failed: ${JSON.stringify(scanRes.data)}`);
+    }
+    scanId = scanRes.data.scan;
+    console.log(`🔍 Active scan started with ID: ${scanId}`);
+  } catch (err) {
+    console.error(`❌ Active scan start error: ${err.message}`);
+    return { status: "error", alerts: [], error: "Active scan could not start" };
+  }
+
+  // 6) Poll active scan status
   let progress = 0;
-  const scanTimeout = Date.now() + 10 * 60 * 1000; // 10 minutes
-  while (progress < 100 && Date.now() < scanTimeout) {
+  const scanDeadline = Date.now() + 10 * 60 * 1000; // 10 minutes
+  while (progress < 100 && Date.now() < scanDeadline) {
     try {
       const statusRes = await axios.get(`${ZAP_API}/JSON/ascan/view/status/`, {
         params: { apikey: API_KEY, scanId }
@@ -83,26 +136,27 @@ async function runZapScan(siteUrl) {
     } catch (err) {
       console.warn(`⚠️ Failed to fetch scan status: ${err.message}`);
     }
-    await new Promise(r => setTimeout(r, 5000));
+    await sleep(5000);
   }
 
   if (progress < 100) {
     console.warn("⚠️ Active scan timed out before reaching 100%");
-    return { status: "timeout", alerts: [] };
+    // Still try to fetch whatever alerts exist
   } else {
     console.log("✅ Active scan completed");
   }
 
-  // ✅ Fetch alerts
+  // 7) Fetch alerts (always attempt; we may have partial data)
   try {
     const alertsRes = await axios.get(`${ZAP_API}/JSON/alert/view/alerts/`, {
       params: { apikey: API_KEY, baseurl: siteUrl }
     });
-    console.log(`✅ Retrieved ${alertsRes.data.alerts?.length || 0} alerts`);
-    return { status: "completed", alerts: alertsRes.data.alerts || [] };
+    const alerts = alertsRes.data.alerts || [];
+    console.log(`✅ Retrieved ${alerts.length} alerts`);
+    return { status: progress < 100 ? "partial" : "completed", alerts };
   } catch (err) {
     console.error(`❌ Failed to fetch alerts: ${err.message}`);
-    return { status: "error", alerts: [{ risk: "Error", issue: "Could not retrieve alerts from ZAP." }] };
+    return { status: "error", alerts: [], error: "Could not retrieve alerts" };
   }
 }
 
