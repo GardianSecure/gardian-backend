@@ -7,7 +7,7 @@ const API_KEY = process.env.ZAP_API_KEY || "gardian123"; // must match launch.js
 
 async function runZapScan(siteUrl) {
   // Wait until ZAP is ready
-  for (let i = 1; i <= 40; i++) {
+  for (let i = 1; i <= 100; i++) {
     try {
       const res = await axios.get(`${ZAP_API}/JSON/core/view/version/`, {
         params: { apikey: API_KEY }
@@ -64,3 +64,4 @@ async function runZapScan(siteUrl) {
 }
 
 module.exports = { runZapScan };
+
