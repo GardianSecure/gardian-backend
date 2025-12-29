@@ -1,3 +1,4 @@
+// zapScan.js
 const axios = require("axios");
 
 const ZAP_API = "http://127.0.0.1:8080";
@@ -5,7 +6,7 @@ const API_KEY = process.env.ZAP_API_KEY || "gardian123";
 
 async function runZapScan(siteUrl) {
   // Wait until ZAP is ready (max 3 minutes, break early if ready)
-  const timeout = Date.now() + 3 * 60 * 1000; // 3 minutes
+  const timeout = Date.now() + 3 * 60 * 1000;
   let ready = false;
 
   while (Date.now() < timeout && !ready) {
@@ -87,6 +88,7 @@ async function runZapScan(siteUrl) {
 
   if (progress < 100) {
     console.warn("⚠️ Active scan timed out before reaching 100%");
+    return { status: "timeout", alerts: [] };
   } else {
     console.log("✅ Active scan completed");
   }
@@ -97,10 +99,10 @@ async function runZapScan(siteUrl) {
       params: { apikey: API_KEY, baseurl: siteUrl }
     });
     console.log(`✅ Retrieved ${alertsRes.data.alerts?.length || 0} alerts`);
-    return alertsRes.data.alerts || [];
+    return { status: "completed", alerts: alertsRes.data.alerts || [] };
   } catch (err) {
     console.error(`❌ Failed to fetch alerts: ${err.message}`);
-    return [{ risk: "Error", issue: "Could not retrieve alerts from ZAP." }];
+    return { status: "error", alerts: [{ risk: "Error", issue: "Could not retrieve alerts from ZAP." }] };
   }
 }
 
