@@ -4,15 +4,18 @@ const ZAP_API = "http://127.0.0.1:8080";
 const API_KEY = process.env.ZAP_API_KEY || "gardian123";
 
 async function runZapScan(siteUrl) {
-  // Wait until ZAP is ready (max 2 minutes)
-  const timeout = Date.now() + 2 * 60 * 1000;
-  while (Date.now() < timeout) {
+  // Wait until ZAP is ready (max 3 minutes, break early if ready)
+  const timeout = Date.now() + 3 * 60 * 1000; // 3 minutes
+  let ready = false;
+
+  while (Date.now() < timeout && !ready) {
     try {
       const res = await axios.get(`${ZAP_API}/JSON/core/view/version/`, {
         params: { apikey: API_KEY }
       });
       if (res.data) {
         console.log("✅ ZAP is fully initialized and ready to scan");
+        ready = true;
         break;
       }
     } catch (err) {
@@ -20,8 +23,9 @@ async function runZapScan(siteUrl) {
     }
     await new Promise(r => setTimeout(r, 3000));
   }
-  if (Date.now() >= timeout) {
-    throw new Error("ZAP daemon did not become ready in time");
+
+  if (!ready) {
+    throw new Error("❌ ZAP daemon did not become ready within 3 minutes");
   }
 
   // 🕷️ Spider the site first
@@ -67,7 +71,7 @@ async function runZapScan(siteUrl) {
 
   // ⏳ Poll until scan completes
   let progress = 0;
-  const scanTimeout = Date.now() + 10 * 60 * 1000;
+  const scanTimeout = Date.now() + 10 * 60 * 1000; // 10 minutes
   while (progress < 100 && Date.now() < scanTimeout) {
     try {
       const statusRes = await axios.get(`${ZAP_API}/JSON/ascan/view/status/`, {
