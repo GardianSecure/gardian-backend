@@ -1,9 +1,7 @@
-// zapScan.js
 const axios = require("axios");
 
-// ZAP runs inside the same container, so use localhost
 const ZAP_API = "http://127.0.0.1:8080";
-const API_KEY = process.env.ZAP_API_KEY || "gardian123"; // must match launch.js config
+const API_KEY = process.env.ZAP_API_KEY || "gardian123";
 
 async function runZapScan(siteUrl) {
   // Wait until ZAP is ready (max 2 minutes)
@@ -26,7 +24,31 @@ async function runZapScan(siteUrl) {
     throw new Error("ZAP daemon did not become ready in time");
   }
 
-  // Start active scan
+  // 🕷️ Spider the site first
+  console.log("🕷️ Starting spider to crawl site...");
+  const spiderRes = await axios.get(`${ZAP_API}/JSON/spider/action/scan/`, {
+    params: {
+      apikey: API_KEY,
+      url: siteUrl,
+      recurse: true
+    }
+  });
+  const spiderId = spiderRes.data.scan;
+  console.log(`🕷️ Spider started with ID: ${spiderId}`);
+
+  // Wait for spider to complete
+  let spiderProgress = 0;
+  while (spiderProgress < 100) {
+    const statusRes = await axios.get(`${ZAP_API}/JSON/spider/view/status/`, {
+      params: { apikey: API_KEY, scanId: spiderId }
+    });
+    spiderProgress = parseInt(statusRes.data.status, 10);
+    console.log(`⏳ Spider progress: ${spiderProgress}%`);
+    await new Promise(r => setTimeout(r, 3000));
+  }
+  console.log("✅ Spider completed");
+
+  // 🔍 Start active scan
   const scanRes = await axios.get(`${ZAP_API}/JSON/ascan/action/scan/`, {
     params: {
       apikey: API_KEY,
@@ -43,9 +65,9 @@ async function runZapScan(siteUrl) {
   const scanId = scanRes.data.scan;
   console.log(`🔍 Active scan started with ID: ${scanId}`);
 
-  // Poll until scan completes (with timeout)
+  // ⏳ Poll until scan completes
   let progress = 0;
-  const scanTimeout = Date.now() + 10 * 60 * 1000; // 10 minutes
+  const scanTimeout = Date.now() + 10 * 60 * 1000;
   while (progress < 100 && Date.now() < scanTimeout) {
     try {
       const statusRes = await axios.get(`${ZAP_API}/JSON/ascan/view/status/`, {
@@ -65,7 +87,7 @@ async function runZapScan(siteUrl) {
     console.log("✅ Active scan completed");
   }
 
-  // Fetch alerts
+  // ✅ Fetch alerts
   try {
     const alertsRes = await axios.get(`${ZAP_API}/JSON/alert/view/alerts/`, {
       params: { apikey: API_KEY, baseurl: siteUrl }
