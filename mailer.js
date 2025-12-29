@@ -11,11 +11,11 @@ function sendReportEmail(to, reportSummary, reportId) {
     throw new Error("Missing SENDGRID_VERIFIED_SENDER environment variable");
   }
 
-  const issuesHtml = reportSummary.topIssues.map(issue => `
+  const issuesHtml = (reportSummary.topIssues || []).map(issue => `
     <li>
       <strong>${issue.risk}:</strong> ${issue.name || issue.title}
       <br/>
-      <em>${issue.plainSummary || issue.description}</em>
+      <em>${issue.plainSummary || issue.description || ""}</em>
       ${issue.reference ? `<br/><a href="${issue.reference}">Learn more</a>` : ""}
     </li>
   `).join("");
@@ -29,24 +29,19 @@ function sendReportEmail(to, reportSummary, reportId) {
       <h2>🔐 Gardian Scan ${reportSummary.status || "Complete"}</h2>
       <p>Here’s a quick summary:</p>
       <ul>
-        <li><strong>Total Findings:</strong> ${reportSummary.totalFindings}</li>
-        <li><strong>High Risk:</strong> ${reportSummary.high}</li>
-        <li><strong>Medium Risk:</strong> ${reportSummary.medium}</li>
-        <li><strong>Low Risk:</strong> ${reportSummary.low}</li>
+        <li><strong>Total Findings:</strong> ${reportSummary.totalFindings ?? 0}</li>
+        <li><strong>High Risk:</strong> ${reportSummary.high ?? 0}</li>
+        <li><strong>Medium Risk:</strong> ${reportSummary.medium ?? 0}</li>
+        <li><strong>Low Risk:</strong> ${reportSummary.low ?? 0}</li>
       </ul>
-      <p><strong>Top Issues:</strong></p>
-      <ul>
-        ${issuesHtml}
-      </ul>
+      ${issuesHtml ? `<p><strong>Top Issues:</strong></p><ul>${issuesHtml}</ul>` : "<p>No issues to highlight.</p>"}
       <p><small>Report ID: ${reportId}</small></p>
     `
   };
 
   return sgMail
     .send(msg)
-    .then(() => {
-      console.log(`✅ Report email sent to ${to}`);
-    })
+    .then(() => console.log(`✅ Report email sent to ${to}`))
     .catch(error => {
       console.error("❌ Failed to send report email:", error);
       throw error;
