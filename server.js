@@ -39,89 +39,88 @@ async function runZapWithTimeout(siteUrl) {
 
 // Scan endpoint
 app.post("/scan", async (req, res) => {
+  const { siteUrl, email, consentGiven } = req.body;
+  console.log("📩 Incoming scan request:", req.body);
+
+  if (!siteUrl || !email || !consentGiven) {
+    return res.status(400).json({ error: "Missing required fields or consent not given." });
+  }
+
+  const submission = {
+    id: uuidv4(),
+    siteUrl,
+    email,
+    consentGiven,
+    timestamp: new Date().toISOString(),
+  };
+
+  submissions.push(submission);
+
+  // Persist submissions
   try {
-    const { siteUrl, email, consentGiven } = req.body;
-    console.log("📩 Incoming scan request:", req.body);
+    fs.writeFileSync("submissions.json", JSON.stringify(submissions, null, 2));
+  } catch (fsErr) {
+    console.error("❌ Failed to write submissions.json:", fsErr);
+  }
 
-    if (!siteUrl || !email || !consentGiven) {
-      return res.status(400).json({ error: "Missing required fields or consent not given." });
-    }
+  // Run ZAP scan with safe fallback
+  let findings;
+  try {
+    findings = await runZapWithTimeout(siteUrl);
+  } catch (zapErr) {
+    console.error("❌ Internal ZAP error:", zapErr.message);
+    findings = [{ risk: "Info", issue: "Scan could not complete, please try again later." }];
+  }
 
-    const submission = {
-      id: uuidv4(),
-      siteUrl,
+  // Save report
+  try {
+    const reportPath = path.join(__dirname, "reports");
+    if (!fs.existsSync(reportPath)) fs.mkdirSync(reportPath);
+    fs.writeFileSync(
+      path.join(reportPath, `report-${submission.id}.json`),
+      JSON.stringify(findings, null, 2)
+    );
+  } catch (fsErr) {
+    console.error("❌ Failed to write report file:", fsErr);
+  }
+
+  // Send email
+  try {
+    await sendReportEmail(
       email,
-      consentGiven,
-      timestamp: new Date().toISOString(),
-    };
-
-    submissions.push(submission);
-    try {
-      fs.writeFileSync("submissions.json", JSON.stringify(submissions, null, 2));
-    } catch (fsErr) {
-      console.error("❌ Failed to write submissions.json:", fsErr);
-    }
-
-    // Run ZAP scan with safe fallback
-    let findings = [];
-    try {
-      findings = await runZapWithTimeout(siteUrl);
-    } catch (zapErr) {
-      console.error("❌ Internal ZAP error:", zapErr.message);
-      findings = [{ risk: "Info", issue: "Scan could not complete, please try again later." }];
-    }
-
-    // Save report
-    try {
-      const reportPath = path.join(__dirname, "reports");
-      if (!fs.existsSync(reportPath)) fs.mkdirSync(reportPath);
-      fs.writeFileSync(
-        `${reportPath}/report-${submission.id}.json`,
-        JSON.stringify(findings, null, 2)
-      );
-    } catch (fsErr) {
-      console.error("❌ Failed to write report file:", fsErr);
-    }
-
-    // Send email
-    try {
-      await sendReportEmail(
-        email,
-        {
-          totalFindings: findings.length,
-          high: findings.filter((f) => f.risk === "High").length,
-          medium: findings.filter((f) => f.risk === "Medium").length,
-          low: findings.filter((f) => f.risk === "Low").length,
-          topIssues: findings.slice(0, 3),
-        },
-        submission.id
-      );
-    } catch (mailErr) {
-      console.error("❌ Failed to send email:", mailErr);
-    }
-
-    // Always return a clean response
-    res.json({
-      message: "Scan complete.",
-      id: submission.id,
-      summary: {
+      {
         totalFindings: findings.length,
         high: findings.filter((f) => f.risk === "High").length,
         medium: findings.filter((f) => f.risk === "Medium").length,
         low: findings.filter((f) => f.risk === "Low").length,
+        topIssues: findings.slice(0, 3),
       },
-      topIssues: findings.slice(0, 3),
-      status: findings.some(f => f.risk === "Info" && f.issue.includes("could not complete"))
-        ? "partial"
-        : "completed"
-    });
-  } catch (error) {
-    res.status(500).json({ error: "Internal server error." });
+      submission.id,
+      siteUrl
+    );
+  } catch (mailErr) {
+    console.error("❌ Failed to send email:", mailErr);
   }
-});
 
-app.get("/health", (req, res) => {
-  res.status(200).send("OK");
+  // Return clean response
+  res.json({
+    message: "Scan complete.",
+    id: submission.id,
+    summary: {
+      totalFindings: findings.length,
+      high: findings.filter((f) => f.risk === "High").length,
+      medium: findings.filter((f) => f.risk === "Medium").length,
+      low: findings.filter((f) => f.risk === "Low").length,
+    },
+    topIssues: findings.slice(0, 3),
+    status: findings.some(
+      (f) => f.risk === "Info" && f.issue.includes("could not complete")
+    )
+      ? "partial"
+      : findings.some((f) => f.risk === "Timeout")
+      ? "timeout"
+      : "completed",
+  });
 });
 
 // Catch-all route
@@ -133,4 +132,3 @@ const PORT = process.env.PORT || 10000;
 app.listen(PORT, "0.0.0.0", () => {
   console.log(`✅ GardianX backend running on port ${PORT}`);
 });
-
