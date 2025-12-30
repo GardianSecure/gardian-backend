@@ -17,7 +17,7 @@ async function waitForZapReady(maxMs = 180000) {
     } catch {
       console.log("⏳ Waiting for ZAP API...");
     }
-    await sleep(3000);
+    await sleep(20000);
   }
   throw new Error("❌ ZAP API did not become ready in time");
 }
@@ -150,3 +150,4 @@ async function runZapScan(siteUrl) {
 }
 
 module.exports = { runZapScan };
+
