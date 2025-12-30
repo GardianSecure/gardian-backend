@@ -19,6 +19,7 @@ setTimeout(() => {
     "-config", "proxy.port=8080",
 
     // API config
+    "-config", "api.disablekey=false",
     "-config", "api.key=gardian123",
     "-config", "api.addrs.addr.name=.*",
     "-config", "api.addrs.addr.regex=true",
