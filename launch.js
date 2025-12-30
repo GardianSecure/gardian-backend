@@ -13,7 +13,7 @@ setTimeout(() => {
     "-daemon",
     "-host", "0.0.0.0",
 
-    // Force ZAP to bind to 8080 (prevents random port selection)
+    // Force ZAP to bind to 8080 (prevent random port)
     "-port", "8080",
     "-config", "server.port=8080",
 
@@ -22,16 +22,16 @@ setTimeout(() => {
     "-config", "api.addrs.addr.name=.*",
     "-config", "api.addrs.addr.regex=true",
 
-    // Disable Selenium/browser integration noise
+    // Disable Selenium/browser integration
     "-config", "selenium.enabled=false",
 
-    // CORRECT auto-update disable flags (prevent installs at startup)
+    // Correct auto-update disable flags (prevent add-on installs at startup)
     "-config", "autoupdate.optionCheckOnStart=false",
     "-config", "autoupdate.optionDownloadNewRelease=false",
     "-config", "autoupdate.optionInstallNewExtensions=false",
     "-config", "autoupdate.optionInstallScannerRules=false",
   ], { stdio: "inherit" });
 
-  // Keep process alive (important for hosting platforms)
+  // Keep process alive
   setInterval(() => {}, 1000);
 }, 15000);
