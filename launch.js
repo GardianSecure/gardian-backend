@@ -17,6 +17,8 @@ setTimeout(() => {
     "-port", "8080",
     "-config", "server.port=8080",
     "-config", "proxy.port=8080",
+    "-config", "api.disablekey=false",
+    "-config", "api.key=gardian123",
 
     // API config
     "-config", "api.disablekey=false",
@@ -39,3 +41,4 @@ setTimeout(() => {
   // Keep process alive
   setInterval(() => {}, 1000);
 }, 15000);
+
