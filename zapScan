@@ -22,7 +22,7 @@ async function waitForZapReady(maxMs = 3 * 60 * 1000) {
   throw new Error("❌ ZAP API did not become ready in time");
 }
 
-// Wait until spider and ascan add-ons are initialized (using views that exist only when loaded)
+// Wait until spider and ascan add-ons are initialized
 async function waitForImplementors(maxMs = 90 * 1000) {
   const deadline = Date.now() + maxMs;
   while (Date.now() < deadline) {
