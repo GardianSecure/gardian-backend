@@ -47,7 +47,7 @@ async function waitForImplementors(maxMs = 90000) {
     console.log(`⏳ Implementors not ready yet (spider=${spiderOK}, ascan=${ascanOK})`);
     await sleep(3000);
   }
-  throw new Error("❌ Required implementors not ready in time");
+  throw new Error("❌ Required implementors (spider/ascan) not ready in time");
 }
 
 async function runZapScan(siteUrl) {
