@@ -20,8 +20,7 @@ RUN npm install
 # Copy the rest of the backend
 COPY . .
 
-# Set port explicitly
-ENV PORT=10000
+# Expose port (Render will inject $PORT at runtime)
 EXPOSE 10000
 
 # Default start command: run launch.js via npm
