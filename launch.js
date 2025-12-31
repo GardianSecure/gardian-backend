@@ -8,7 +8,7 @@ spawn("node", ["server.js"], { stdio: "inherit" });
 
 // Delay ZAP start so backend is already listening
 setTimeout(() => {
-  const zapPort = process.env.PORT || "8080";
+  const zapPort = process.env.PORT;
   console.log(`🚀 Launching ZAP daemon on Render-assigned port ${zapPort}...`);
 
   spawn("/opt/zap/zap.sh", [
@@ -41,6 +41,8 @@ setTimeout(() => {
     "-config", "autoupdate.optionInstallOptionalAddOns=false",
     "-config", "autoupdate.optionInstallBetaAddOns=false",
   ], { stdio: "inherit" });
+
+  console.log("✅ ZAP spawn command executed");
 
   // Keep process alive
   setInterval(() => {}, 1000);
