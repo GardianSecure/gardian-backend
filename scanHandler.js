@@ -1,5 +1,5 @@
 // scanHandler.js
-const { runZapScan } = require("./zapScan");
+const runZapScan = require("./zapScan");
 const sendReportEmail = require("./mailer");
 
 async function handleScanRequest({ email, siteUrl }) {
@@ -18,6 +18,7 @@ async function handleScanRequest({ email, siteUrl }) {
       high: result.alerts.filter(a => a.risk === "High").length,
       medium: result.alerts.filter(a => a.risk === "Medium").length,
       low: result.alerts.filter(a => a.risk === "Low").length,
+      informational: result.alerts.filter(a => a.risk === "Informational").length,
       topIssues: result.alerts.slice(0, 5)
     };
 
@@ -34,6 +35,7 @@ async function handleScanRequest({ email, siteUrl }) {
       high: 0,
       medium: 0,
       low: 0,
+      informational: 0,
       topIssues: []
     };
     await sendReportEmail(email, summary, reportId, siteUrl);
