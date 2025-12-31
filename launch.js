@@ -30,6 +30,9 @@ setTimeout(() => {
     // Disable Selenium/browser integration
     "-config", "selenium.enabled=false",
 
+    // Disable client integration (prevents Firefox errors)
+    "-config", "addon.client.disabled=true",
+
     // Disable ALL auto-update behaviours
     "-config", "autoupdate.optionCheckOnStart=false",
     "-config", "autoupdate.optionDownloadNewRelease=false",
