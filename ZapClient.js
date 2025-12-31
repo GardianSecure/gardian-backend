@@ -1,9 +1,12 @@
 // runZapScan.js
-const fetch = require('node-fetch');
-const { ZAP_API_BASE, waitForZapReady } = require('./zapClient');
+const fetch = require("node-fetch");
+const { waitForZapReady } = require("./zapClient");
+
+const zapPort = process.env.PORT || 8080;
+const ZAP_API_BASE = `http://127.0.0.1:${zapPort}`;
 
 async function runZapScan(targetUrl, apiKey = process.env.ZAP_API_KEY || "gardian123") {
-  await waitForZapReady();
+  await waitForZapReady(ZAP_API_BASE, apiKey);
 
   // 1) Start spider scan
   const spiderStart = await fetch(
@@ -24,8 +27,10 @@ async function runZapScan(targetUrl, apiKey = process.env.ZAP_API_KEY || "gardia
     );
     const { status } = await res.json();
     spiderProgress = Number(status);
-    await new Promise(r => setTimeout(r, 1000));
+    console.log(`⏳ Spider progress: ${spiderProgress}%`);
+    await new Promise(r => setTimeout(r, 3000));
   }
+  console.log("✅ Spider completed");
 
   // 3) Start active scan
   const ascanStart = await fetch(
@@ -46,15 +51,19 @@ async function runZapScan(targetUrl, apiKey = process.env.ZAP_API_KEY || "gardia
     );
     const { status } = await res.json();
     ascanProgress = Number(status);
-    await new Promise(r => setTimeout(r, 2000));
+    console.log(`⏳ Active scan progress: ${ascanProgress}%`);
+    await new Promise(r => setTimeout(r, 5000));
   }
+  console.log("✅ Active scan completed");
 
   // 5) Get alerts
   const alertsRes = await fetch(
     `${ZAP_API_BASE}/JSON/alert/view/alerts/?baseurl=${encodeURIComponent(targetUrl)}&apikey=${apiKey}`
   );
   const alertsJson = await alertsRes.json();
-  return alertsJson.alerts || [];
+  const alerts = alertsJson.alerts || [];
+  console.log(`✅ Retrieved ${alerts.length} alerts`);
+  return alerts;
 }
 
 module.exports = runZapScan;
