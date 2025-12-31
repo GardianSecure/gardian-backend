@@ -60,6 +60,7 @@ async function runZapScan(siteUrl) {
     params: { apikey: API_KEY, url: siteUrl, recurse: true }
   });
   const spiderId = spiderRes.data?.scan;
+  if (!spiderId) throw new Error("❌ Spider failed to start");
   let spiderProgress = 0;
   while (spiderProgress < 100) {
     const statusRes = await axios.get(`${ZAP_API}/JSON/spider/view/status/`, {
@@ -77,6 +78,7 @@ async function runZapScan(siteUrl) {
     params: { apikey: API_KEY, url: siteUrl, recurse: true, inScopeOnly: false }
   });
   const scanId = scanRes.data?.scan;
+  if (!scanId) throw new Error("❌ Active scan failed to start");
   let progress = 0;
   while (progress < 100) {
     const statusRes = await axios.get(`${ZAP_API}/JSON/ascan/view/status/`, {
@@ -97,4 +99,4 @@ async function runZapScan(siteUrl) {
   return { status: "completed", alerts };
 }
 
-module.exports = { runZapScan };
+module.exports = runZapScan;
