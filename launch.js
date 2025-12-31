@@ -1,22 +1,22 @@
 // launch.js
 const { spawn } = require("child_process");
 
-console.log("🚀 Launching backend on Render-assigned port:", process.env.PORT);
+const appPort = process.env.PORT;          // Render-assigned port for Express
+const zapPort = process.env.ZAP_PORT || "8081"; // Dedicated ZAP port (separate from Express)
 
-// Start backend immediately so Render health checks pass
+console.log("🚀 Starting backend on port:", appPort);
 spawn("node", ["server.js"], { stdio: "inherit" });
 
 // Delay ZAP start so backend is already listening
 setTimeout(() => {
-  const zapPort = process.env.PORT;
-  console.log(`🚀 Launching ZAP daemon on Render-assigned port ${zapPort}...`);
+  console.log(`🚀 Launching ZAP daemon on port ${zapPort} (separate from backend ${appPort})...`);
 
-  spawn("/opt/zap/zap.sh", [
+  const args = [
     "-daemon",
-    "-host", "0.0.0.0",
-
-    // Force ZAP to bind to Render-assigned port
+    "-host", "127.0.0.1",              // keep ZAP local-only
     "-port", zapPort,
+
+    // Bind all related configs to the dedicated ZAP port
     "-config", `server.port=${zapPort}`,
     "-config", `proxy.port=${zapPort}`,
     "-config", `network.localServers.port=${zapPort}`,
@@ -27,7 +27,7 @@ setTimeout(() => {
     "-config", "api.addrs.addr.name=.*",
     "-config", "api.addrs.addr.regex=true",
 
-    // 🔧 Disable problematic add-ons
+    // Hard-disable problematic add-ons
     "-config", "selenium.enabled=false",
     "-config", "addon.client.disabled=true",
     "-config", "addon.oast.disabled=true",
@@ -40,8 +40,9 @@ setTimeout(() => {
     "-config", "autoupdate.optionInstallScannerRules=false",
     "-config", "autoupdate.optionInstallOptionalAddOns=false",
     "-config", "autoupdate.optionInstallBetaAddOns=false",
-  ], { stdio: "inherit" });
+  ];
 
+  spawn("/opt/zap/zap.sh", args, { stdio: "inherit" });
   console.log("✅ ZAP spawn command executed");
 
   // Keep process alive
