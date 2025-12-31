@@ -5,7 +5,7 @@ const fs = require("fs");
 const path = require("path");
 const { v4: uuidv4 } = require("uuid");
 
-const { runZapScan } = require("./zapScan");
+const runZapScan = require("./zapScan");
 const sendReportEmail = require("./mailer");
 
 const app = express();
@@ -31,7 +31,7 @@ async function runZapWithTimeout(siteUrl) {
     new Promise((resolve) =>
       setTimeout(() => {
         console.warn(`⚠️ ZAP scan timed out after ${timeoutMs}ms`);
-        resolve([{ risk: "Timeout", issue: `ZAP scan exceeded ${timeoutMs}ms limit` }]);
+        resolve({ status: "timeout", alerts: [] });
       }, timeoutMs)
     ),
   ]);
@@ -64,13 +64,15 @@ app.post("/scan", async (req, res) => {
   }
 
   // Run ZAP scan with safe fallback
-  let findings;
+  let result;
   try {
-    findings = await runZapWithTimeout(siteUrl);
+    result = await runZapWithTimeout(siteUrl);
   } catch (zapErr) {
     console.error("❌ Internal ZAP error:", zapErr.message);
-    findings = [{ risk: "Info", issue: "Scan could not complete, please try again later." }];
+    result = { status: "error", alerts: [] };
   }
+
+  const findings = result.alerts || [];
 
   // Save report
   try {
@@ -78,26 +80,26 @@ app.post("/scan", async (req, res) => {
     if (!fs.existsSync(reportPath)) fs.mkdirSync(reportPath);
     fs.writeFileSync(
       path.join(reportPath, `report-${submission.id}.json`),
-      JSON.stringify(findings, null, 2)
+      JSON.stringify(result, null, 2)
     );
   } catch (fsErr) {
     console.error("❌ Failed to write report file:", fsErr);
   }
 
+  // Build summary
+  const summary = {
+    status: result.status,
+    totalFindings: findings.length,
+    high: findings.filter((f) => f.risk === "High").length,
+    medium: findings.filter((f) => f.risk === "Medium").length,
+    low: findings.filter((f) => f.risk === "Low").length,
+    informational: findings.filter((f) => f.risk === "Informational").length,
+    topIssues: findings.slice(0, 3),
+  };
+
   // Send email
   try {
-    await sendReportEmail(
-      email,
-      {
-        totalFindings: findings.length,
-        high: findings.filter((f) => f.risk === "High").length,
-        medium: findings.filter((f) => f.risk === "Medium").length,
-        low: findings.filter((f) => f.risk === "Low").length,
-        topIssues: findings.slice(0, 3),
-      },
-      submission.id,
-      siteUrl
-    );
+    await sendReportEmail(email, summary, submission.id, siteUrl);
   } catch (mailErr) {
     console.error("❌ Failed to send email:", mailErr);
   }
@@ -106,20 +108,7 @@ app.post("/scan", async (req, res) => {
   res.json({
     message: "Scan complete.",
     id: submission.id,
-    summary: {
-      totalFindings: findings.length,
-      high: findings.filter((f) => f.risk === "High").length,
-      medium: findings.filter((f) => f.risk === "Medium").length,
-      low: findings.filter((f) => f.risk === "Low").length,
-    },
-    topIssues: findings.slice(0, 3),
-    status: findings.some(
-      (f) => f.risk === "Info" && f.issue.includes("could not complete")
-    )
-      ? "partial"
-      : findings.some((f) => f.risk === "Timeout")
-      ? "timeout"
-      : "completed",
+    summary,
   });
 });
 
