@@ -9,7 +9,7 @@ spawn("node", ["server.js"], { stdio: "inherit" });
 // Delay ZAP start so backend is already listening
 setTimeout(() => {
   const zapPort = process.env.PORT || "8080";
-  console.log(`🚀 Launching ZAP daemon on fixed port ${zapPort}...`);
+  console.log(`🚀 Launching ZAP daemon on Render-assigned port ${zapPort}...`);
 
   spawn("/opt/zap/zap.sh", [
     "-daemon",
