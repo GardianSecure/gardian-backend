@@ -27,14 +27,11 @@ setTimeout(() => {
     "-config", "api.addrs.addr.name=.*",
     "-config", "api.addrs.addr.regex=true",
 
-    // Disable Selenium/browser integration
+    // 🔧 Disable problematic add-ons
     "-config", "selenium.enabled=false",
-
-    // Disable client integration (prevents Firefox errors)
     "-config", "addon.client.disabled=true",
-
-    // Disable OAST (prevents out-of-band warnings)
     "-config", "addon.oast.disabled=true",
+    "-config", "addon.callhome.disabled=true",
 
     // Disable ALL auto-update behaviours
     "-config", "autoupdate.optionCheckOnStart=false",
