@@ -1,7 +1,7 @@
 // zapScan.js
 const axios = require("axios");
 
-const zapPort = process.env.PORT || 8080;
+const zapPort = process.env.ZAP_PORT || 8081; // must match launch.js
 const ZAP_API = `http://127.0.0.1:${zapPort}`;
 const API_KEY = process.env.ZAP_API_KEY || "gardian123";
 const sleep = ms => new Promise(r => setTimeout(r, ms));
