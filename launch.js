@@ -8,19 +8,18 @@ spawn("node", ["server.js"], { stdio: "inherit" });
 
 // Delay ZAP start so backend is already listening
 setTimeout(() => {
-  console.log("🚀 Launching ZAP daemon on fixed port 8080...");
+  const zapPort = process.env.PORT || "8080";
+  console.log(`🚀 Launching ZAP daemon on fixed port ${zapPort}...`);
+
   spawn("/opt/zap/zap.sh", [
     "-daemon",
     "-host", "0.0.0.0",
 
-    // Force ZAP to bind to 8080 (double lock)
-    "-port", "8080",
-    "-config", "server.port=8080",
-    "-config", "proxy.port=8080",
-    "-config", "api.disablekey=false",
-    "-config", "api.key=gardian123",
-    "-config", "network.localServers.port=8080",
-
+    // Force ZAP to bind to Render-assigned port
+    "-port", zapPort,
+    "-config", `server.port=${zapPort}`,
+    "-config", `proxy.port=${zapPort}`,
+    "-config", `network.localServers.port=${zapPort}`,
 
     // API config
     "-config", "api.disablekey=false",
@@ -28,10 +27,10 @@ setTimeout(() => {
     "-config", "api.addrs.addr.name=.*",
     "-config", "api.addrs.addr.regex=true",
 
-    // Disable Selenium/browser integration (no Firefox errors)
+    // Disable Selenium/browser integration
     "-config", "selenium.enabled=false",
 
-    // Disable ALL auto-update behaviours (prevent add-on installs at startup)
+    // Disable ALL auto-update behaviours
     "-config", "autoupdate.optionCheckOnStart=false",
     "-config", "autoupdate.optionDownloadNewRelease=false",
     "-config", "autoupdate.optionInstallNewExtensions=false",
@@ -43,5 +42,3 @@ setTimeout(() => {
   // Keep process alive
   setInterval(() => {}, 1000);
 }, 15000);
-
-
