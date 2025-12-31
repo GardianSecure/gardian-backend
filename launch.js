@@ -13,7 +13,7 @@ setTimeout(() => {
 
   const args = [
     "-daemon",
-    "-host", "127.0.0.1",              // keep ZAP local-only
+    "-host", "127.0.0.1",
     "-port", zapPort,
 
     // Bind all related configs to the dedicated ZAP port
@@ -27,11 +27,11 @@ setTimeout(() => {
     "-config", "api.addrs.addr.name=.*",
     "-config", "api.addrs.addr.regex=true",
 
-    // Hard-disable problematic add-ons
-    "-config", "selenium.enabled=false",
-    "-config", "addon.client.disabled=true",
-    "-config", "addon.oast.disabled=true",
-    "-config", "addon.callhome.disabled=true",
+    // 🔧 Explicitly uninstall problematic add-ons
+    "-addoninstall", "selenium", "-uninstall",
+    "-addoninstall", "client", "-uninstall",
+    "-addoninstall", "oast", "-uninstall",
+    "-addoninstall", "callhome", "-uninstall",
 
     // Disable ALL auto-update behaviours
     "-config", "autoupdate.optionCheckOnStart=false",
