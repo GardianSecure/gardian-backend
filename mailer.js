@@ -1,5 +1,5 @@
 // mailer.js
-const sgMail = require('@sendgrid/mail');
+const sgMail = require("@sendgrid/mail");
 
 if (!process.env.SENDGRID_API_KEY) {
   throw new Error("Missing SENDGRID_API_KEY environment variable");
@@ -22,7 +22,9 @@ function formatIssues(topIssues) {
     const risk = escapeHtml(issue.risk || "Info");
     const title = escapeHtml(issue.name || issue.title || "Unnamed issue");
     const summary = escapeHtml(issue.plainSummary || issue.description || "No summary available.");
-    const ref = issue.reference ? `<br/><a href="${escapeHtml(issue.reference)}" target="_blank" rel="noopener">Learn more</a>` : "";
+    const ref = issue.reference
+      ? `<br/><a href="${escapeHtml(issue.reference)}" target="_blank" rel="noopener">Learn more</a>`
+      : "";
     return `
       <li style="margin-bottom:8px;">
         <strong>${risk}:</strong> ${title}
@@ -107,11 +109,12 @@ function sendReportEmail(to, reportSummary, reportId, siteUrl) {
   }
 
   const subjectSite = siteUrl ? ` — ${siteUrl}` : "";
+  const subjectStatus = reportSummary.status ? ` (${reportSummary.status})` : "";
   const msg = {
     to,
     from: process.env.SENDGRID_VERIFIED_SENDER,
     replyTo: process.env.SENDGRID_VERIFIED_SENDER,
-    subject: `Your Gardian Security Scan Report${subjectSite}`,
+    subject: `Your Gardian Security Scan Report${subjectSite}${subjectStatus}`,
     html: buildHtml(reportSummary, reportId, siteUrl),
     text: buildText(reportSummary, reportId, siteUrl)
   };
