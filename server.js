@@ -24,7 +24,7 @@ const submissions = [];
 async function runZapWithTimeout(siteUrl) {
   const timeoutMs = process.env.ZAP_TIMEOUT_MS
     ? parseInt(process.env.ZAP_TIMEOUT_MS, 10)
-    : 60000; // default 60s
+    : 600000; // default 60s
 
   return Promise.race([
     runZapScan(siteUrl),
@@ -121,3 +121,4 @@ const PORT = process.env.PORT || 10000;
 app.listen(PORT, "0.0.0.0", () => {
   console.log(`✅ GardianX backend running on port ${PORT}`);
 });
+
