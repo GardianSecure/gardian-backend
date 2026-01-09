@@ -28,3 +28,21 @@ Thumbs.db
 *.zip
 *.tar
 *.gz
+
+# Docker artifacts (optional)
+*.pid
+*.sock
+docker-compose.override.yml
+
+# IDE configs (optional)
+.vscode/
+.idea/
+
+# Test and scan artifacts (optional)
+coverage/
+tmp/
+
+# Generated reports/screenshots (optional)
+*.pdf
+*.png
+*.jpg
