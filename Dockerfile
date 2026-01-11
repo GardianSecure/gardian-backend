@@ -2,7 +2,7 @@
 FROM node:18-slim
 
 # Install Java 17 + tools + ZAP
-RUN apt-get update && apt-get install -y wget tar openjdk-17-jre-headless \
+RUN apt-get update && apt-get install -y wget tar openjdk-17-jre-headless curl \
     && wget https://github.com/zaproxy/zaproxy/releases/download/v2.16.1/ZAP_2.16.1_Linux.tar.gz \
     && tar -xzf ZAP_2.16.1_Linux.tar.gz -C /opt \
     && mv /opt/ZAP_2.16.1 /opt/zap \
@@ -20,8 +20,11 @@ RUN npm install
 # Copy the rest of the backend
 COPY . .
 
-# Expose port (Render will inject $PORT at runtime)
+# Expose backend port (Render injects $PORT at runtime)
 EXPOSE 10000
+# Expose ZAP API port
+EXPOSE 8080
 
-# Default start command: run launch.js via npm
-CMD ["npm", "start"]
+# Start both ZAP daemon and backend
+# ZAP runs headless with API enabled, then backend starts
+CMD ["/bin/sh", "-c", "/opt/zap/zap.sh -daemon -host 0.0.0.0 -port 8080 -config api.disablekey=true & npm start"]
