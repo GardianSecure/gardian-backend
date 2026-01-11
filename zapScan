@@ -1,5 +1,6 @@
 //zapScan
 const axios = require("axios");
+
 const zapPort = process.env.ZAP_PORT || 8080; // must match launch.js
 const ZAP_API = `http://127.0.0.1:${zapPort}`;
 const API_KEY = process.env.ZAP_API_KEY || "gardian123";
@@ -89,9 +90,13 @@ async function runZapScan(siteUrl) {
   }
   console.log("✅ Active scan completed");
 
-  // Alerts
+  // Delay before fetching alerts (let passive rules finish)
+  await sleep(5000);
+
+  // Alerts (normalize base URL + pagination)
+  const normalizedUrl = siteUrl.endsWith("/") ? siteUrl : siteUrl + "/";
   const alertsRes = await axios.get(`${ZAP_API}/JSON/alert/view/alerts/`, {
-    params: { apikey: API_KEY, baseurl: siteUrl }
+    params: { apikey: API_KEY, baseurl: normalizedUrl, start: 0, count: 9999 }
   });
   const alerts = alertsRes.data.alerts || [];
   console.log(`✅ Retrieved ${alerts.length} alerts`);
