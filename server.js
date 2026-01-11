@@ -1,4 +1,4 @@
-//server.js
+// server.js
 const express = require("express");
 const bodyParser = require("body-parser");
 const cors = require("cors");
@@ -13,15 +13,10 @@ const app = express();
 app.use(cors());
 app.use(bodyParser.json());
 
-// Health check endpoint
-app.get("/health", (req, res) => {
-  res.status(200).send("OK");
-});
+app.get("/health", (req, res) => res.status(200).send("OK"));
 
-// Store submissions in memory
 const submissions = [];
 
-// Utility: run ZAP with timeout safeguard
 async function runZapWithTimeout(siteUrl) {
   const timeoutMs = process.env.ZAP_TIMEOUT_MS
     ? parseInt(process.env.ZAP_TIMEOUT_MS, 10)
@@ -38,7 +33,6 @@ async function runZapWithTimeout(siteUrl) {
   ]);
 }
 
-// Scan endpoint
 app.post("/scan", async (req, res) => {
   const { siteUrl, email, consentGiven } = req.body;
   console.log("📩 Incoming scan request:", req.body);
@@ -54,28 +48,23 @@ app.post("/scan", async (req, res) => {
     consentGiven,
     timestamp: new Date().toISOString(),
   };
-
   submissions.push(submission);
 
-  // Persist submissions
   try {
     fs.writeFileSync("submissions.json", JSON.stringify(submissions, null, 2));
-  } catch (fsErr) {
-    console.error("❌ Failed to write submissions.json:", fsErr);
+  } catch (err) {
+    console.error("❌ Failed to write submissions.json:", err);
   }
 
-  // Run ZAP scan with safe fallback
   let result;
   try {
     result = await runZapWithTimeout(siteUrl);
-  } catch (zapErr) {
-    console.error("❌ Internal ZAP error:", zapErr.message);
+  } catch (err) {
+    console.error("❌ Internal ZAP error:", err.message);
     result = { status: "Error", alerts: [] };
   }
 
   const findings = result.alerts || [];
-
-  // Save report
   try {
     const reportPath = path.join(__dirname, "reports");
     if (!fs.existsSync(reportPath)) fs.mkdirSync(reportPath);
@@ -83,11 +72,10 @@ app.post("/scan", async (req, res) => {
       path.join(reportPath, `report-${submission.id}.json`),
       JSON.stringify(result, null, 2)
     );
-  } catch (fsErr) {
-    console.error("❌ Failed to write report file:", fsErr);
+  } catch (err) {
+    console.error("❌ Failed to write report file:", err);
   }
 
-  // Build summary
   const summary = {
     status: result.status,
     totalFindings: findings.length,
@@ -98,25 +86,16 @@ app.post("/scan", async (req, res) => {
     topIssues: findings.slice(0, 3),
   };
 
-  // Send email
   try {
     await sendReportEmail(email, summary, submission.id, siteUrl);
-  } catch (mailErr) {
-    console.error("❌ Failed to send email:", mailErr);
+  } catch (err) {
+    console.error("❌ Failed to send email:", err);
   }
 
-  // Return clean response
-  res.json({
-    message: "Scan complete.",
-    id: submission.id,
-    summary,
-  });
+  res.json({ message: "Scan complete.", id: submission.id, summary });
 });
 
-// Catch-all route
-app.use((req, res) => {
-  res.status(404).send("❌ Route not found");
-});
+app.use((req, res) => res.status(404).send("❌ Route not found"));
 
 const PORT = process.env.PORT || 10000;
 app.listen(PORT, "0.0.0.0", () => {
