@@ -1,3 +1,4 @@
+//server.js
 const express = require("express");
 const bodyParser = require("body-parser");
 const cors = require("cors");
@@ -24,14 +25,14 @@ const submissions = [];
 async function runZapWithTimeout(siteUrl) {
   const timeoutMs = process.env.ZAP_TIMEOUT_MS
     ? parseInt(process.env.ZAP_TIMEOUT_MS, 10)
-    : 600000; // default 60s
+    : 60000; // default 60s
 
   return Promise.race([
-    runZapScan(siteUrl),
-    new Promise((resolve) =>
+    runZapScan(siteUrl).then(alerts => ({ status: "Complete", alerts })),
+    new Promise(resolve =>
       setTimeout(() => {
         console.warn(`⚠️ ZAP scan timed out after ${timeoutMs}ms`);
-        resolve({ status: "timeout", alerts: [] });
+        resolve({ status: "Timeout", alerts: [] });
       }, timeoutMs)
     ),
   ]);
@@ -69,7 +70,7 @@ app.post("/scan", async (req, res) => {
     result = await runZapWithTimeout(siteUrl);
   } catch (zapErr) {
     console.error("❌ Internal ZAP error:", zapErr.message);
-    result = { status: "error", alerts: [] };
+    result = { status: "Error", alerts: [] };
   }
 
   const findings = result.alerts || [];
@@ -90,10 +91,10 @@ app.post("/scan", async (req, res) => {
   const summary = {
     status: result.status,
     totalFindings: findings.length,
-    high: findings.filter((f) => f.risk === "High").length,
-    medium: findings.filter((f) => f.risk === "Medium").length,
-    low: findings.filter((f) => f.risk === "Low").length,
-    informational: findings.filter((f) => f.risk === "Informational").length,
+    high: findings.filter(f => f.risk === "High").length,
+    medium: findings.filter(f => f.risk === "Medium").length,
+    low: findings.filter(f => f.risk === "Low").length,
+    informational: findings.filter(f => f.risk === "Informational").length,
     topIssues: findings.slice(0, 3),
   };
 
@@ -121,4 +122,3 @@ const PORT = process.env.PORT || 10000;
 app.listen(PORT, "0.0.0.0", () => {
   console.log(`✅ GardianX backend running on port ${PORT}`);
 });
-
