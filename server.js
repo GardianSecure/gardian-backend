@@ -25,10 +25,10 @@ const submissions = [];
 async function runZapWithTimeout(siteUrl) {
   const timeoutMs = process.env.ZAP_TIMEOUT_MS
     ? parseInt(process.env.ZAP_TIMEOUT_MS, 10)
-    : 60000; // default 60s
+    : 180000; // default 3 minutes
 
   return Promise.race([
-    runZapScan(siteUrl).then(alerts => ({ status: "Complete", alerts })),
+    runZapScan(siteUrl),
     new Promise(resolve =>
       setTimeout(() => {
         console.warn(`⚠️ ZAP scan timed out after ${timeoutMs}ms`);
