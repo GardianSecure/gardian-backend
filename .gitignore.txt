@@ -1,18 +1,27 @@
 # Node modules
 node_modules/
 
-# Runtime files
-submissions.json
-reports/
-
 # Environment variables
 .env
+.env.*
+!.env.example
 
 # Logs
+logs/
 *.log
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+
+# Runtime and temp files
+submissions.json
+reports/
+tmp/
+coverage/
+.cache/
+*.pid
+*.seed
+*.pid.lock
 
 # Build artifacts
 dist/
@@ -29,20 +38,22 @@ Thumbs.db
 *.tar
 *.gz
 
-# Docker artifacts (optional)
-*.pid
-*.sock
+# Docker
 docker-compose.override.yml
+*.sock
 
-# IDE configs (optional)
+# IDE/editor
 .vscode/
 .idea/
+*.swp
 
-# Test and scan artifacts (optional)
-coverage/
-tmp/
-
-# Generated reports/screenshots (optional)
+# Test and scan artifacts
 *.pdf
 *.png
 *.jpg
+
+# ZAP-specific transient files (if mounted or exported)
+zap/
+zap-session/
+zap-logs/
+zap-reports/
