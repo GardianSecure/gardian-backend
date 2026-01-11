@@ -2,10 +2,13 @@
 const fetch = require("node-fetch");
 const { waitForZapReady } = require("./zapClient");
 
-const zapPort = process.env.PORT || 8080;
-const ZAP_API_BASE = `http://127.0.0.1:${zapPort}`;
+// Use a dedicated env var for ZAP host/port, not the backend PORT
+const zapHost = process.env.ZAP_HOST || "127.0.0.1";
+const zapPort = process.env.ZAP_PORT || 8080;
+const ZAP_API_BASE = `http://${zapHost}:${zapPort}`;
 
 async function runZapScan(targetUrl, apiKey = process.env.ZAP_API_KEY || "gardian123") {
+  // Wait until ZAP API is responsive
   await waitForZapReady(ZAP_API_BASE, apiKey);
 
   // 1) Start spider scan
