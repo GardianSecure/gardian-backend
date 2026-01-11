@@ -1,4 +1,12 @@
 {
+  "name": "gardianx-backend",
+  "version": "1.0.0",
+  "description": "Backend service for GardianX security scans and reporting",
+  "main": "server.js",
+  "scripts": {
+    "start": "node launch.js",
+    "dev": "nodemon launch.js"
+  },
   "dependencies": {
     "@sendgrid/mail": "^8.1.6",
     "axios": "^1.12.2",
@@ -7,7 +15,7 @@
     "express": "^4.18.2",
     "uuid": "^11.1.0"
   },
-  "scripts": {
-    "start": "node launch.js"
+  "engines": {
+    "node": ">=18"
   }
 }
