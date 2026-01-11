@@ -1,8 +1,8 @@
 // launch.js
 const { spawn } = require("child_process");
 
-const appPort = process.env.PORT;          // Render-assigned port for Express
-const zapPort = process.env.ZAP_PORT || "8081"; // Dedicated ZAP port (separate from Express)
+const appPort = process.env.PORT;               // Render-assigned port for Express
+const zapPort = process.env.ZAP_PORT || "8080"; // Dedicated ZAP port (default 8080)
 
 console.log("🚀 Starting backend on port:", appPort);
 spawn("node", ["server.js"], { stdio: "inherit" });
@@ -13,27 +13,16 @@ setTimeout(() => {
 
   const args = [
     "-daemon",
-    "-host", "127.0.0.1",
+    "-host", "0.0.0.0",          // Bind to all interfaces so Docker networking works
     "-port", zapPort,
 
-    // Bind all related configs to the dedicated ZAP port
-    "-config", `server.port=${zapPort}`,
-    "-config", `proxy.port=${zapPort}`,
-    "-config", `network.localServers.port=${zapPort}`,
-
-    // API config
+    // API configuration
     "-config", "api.disablekey=false",
     "-config", "api.key=gardian123",
     "-config", "api.addrs.addr.name=.*",
     "-config", "api.addrs.addr.regex=true",
 
-    // 🔧 Explicitly uninstall problematic add-ons
-    "-addoninstall", "selenium", "-uninstall",
-    "-addoninstall", "client", "-uninstall",
-    "-addoninstall", "oast", "-uninstall",
-    "-addoninstall", "callhome", "-uninstall",
-
-    // Disable ALL auto-update behaviours
+    // Disable auto-update behaviours
     "-config", "autoupdate.optionCheckOnStart=false",
     "-config", "autoupdate.optionDownloadNewRelease=false",
     "-config", "autoupdate.optionInstallNewExtensions=false",
