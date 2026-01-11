@@ -13,7 +13,7 @@ setTimeout(() => {
 
   const args = [
     "-daemon",
-    "-host", "0.0.0.0",          // Bind to all interfaces so Docker networking works
+    "-host", "0.0.0.0",
     "-port", zapPort,
 
     // API configuration
@@ -29,6 +29,12 @@ setTimeout(() => {
     "-config", "autoupdate.optionInstallScannerRules=false",
     "-config", "autoupdate.optionInstallOptionalAddOns=false",
     "-config", "autoupdate.optionInstallBetaAddOns=false",
+
+    // Explicitly uninstall add-ons that cause noisy errors
+    "-addonuninstall", "selenium",
+    "-addonuninstall", "client",
+    "-addonuninstall", "oast",
+    "-addonuninstall", "callhome"
   ];
 
   spawn("/opt/zap/zap.sh", args, { stdio: "inherit" });
