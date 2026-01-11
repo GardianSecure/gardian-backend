@@ -1,6 +1,7 @@
 // mailer.js
 const sgMail = require("@sendgrid/mail");
 
+// Ensure API key is present
 if (!process.env.SENDGRID_API_KEY) {
   throw new Error("Missing SENDGRID_API_KEY environment variable");
 }
@@ -11,9 +12,12 @@ function escapeHtml(str) {
   return String(str || "")
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;");
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
 }
 
+// Format top issues into HTML list
 function formatIssues(topIssues) {
   const issues = Array.isArray(topIssues) ? topIssues.slice(0, 5) : [];
   if (!issues.length) return "<p>No issues to highlight.</p>";
@@ -37,6 +41,7 @@ function formatIssues(topIssues) {
   return `<ul style="padding-left:18px;">${items}</ul>`;
 }
 
+// Build HTML email body
 function buildHtml(reportSummary = {}, reportId, siteUrl) {
   const status = escapeHtml(reportSummary.status || "Complete");
   const total = Number.isFinite(reportSummary.totalFindings) ? reportSummary.totalFindings : 0;
@@ -73,6 +78,7 @@ function buildHtml(reportSummary = {}, reportId, siteUrl) {
   `;
 }
 
+// Build plain-text email body
 function buildText(reportSummary = {}, reportId, siteUrl) {
   const status = reportSummary.status || "Complete";
   const total = Number.isFinite(reportSummary.totalFindings) ? reportSummary.totalFindings : 0;
@@ -103,7 +109,8 @@ function buildText(reportSummary = {}, reportId, siteUrl) {
   ].join("\n");
 }
 
-function sendReportEmail(to, reportSummary, reportId, siteUrl) {
+// Send email via SendGrid
+async function sendReportEmail(to, reportSummary, reportId, siteUrl) {
   if (!process.env.SENDGRID_VERIFIED_SENDER) {
     throw new Error("Missing SENDGRID_VERIFIED_SENDER environment variable");
   }
@@ -119,15 +126,13 @@ function sendReportEmail(to, reportSummary, reportId, siteUrl) {
     text: buildText(reportSummary, reportId, siteUrl)
   };
 
-  return sgMail
-    .send(msg)
-    .then(() => {
-      console.log(`✅ Report email sent to ${to}`);
-    })
-    .catch(error => {
-      console.error("❌ Failed to send report email:", error);
-      throw error;
-    });
+  try {
+    await sgMail.send(msg);
+    console.log(`✅ Report email sent to ${to}`);
+  } catch (error) {
+    console.error("❌ Failed to send report email:", error);
+    throw error;
+  }
 }
 
 module.exports = sendReportEmail;
