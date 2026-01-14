@@ -17,20 +17,18 @@ app.get("/health", (req, res) => res.status(200).send("OK"));
 
 const submissions = [];
 
+// Run ZAP with timeout safeguard
 async function runZapWithTimeout(siteUrl) {
   const timeoutMs = process.env.ZAP_TIMEOUT_MS
     ? parseInt(process.env.ZAP_TIMEOUT_MS, 10)
     : 180000; // default 3 minutes
 
-  return Promise.race([
-    runZapScan(siteUrl),
-    new Promise(resolve =>
-      setTimeout(() => {
-        console.warn(`⚠️ ZAP scan timed out after ${timeoutMs}ms`);
-        resolve({ status: "Timeout", alerts: [] });
-      }, timeoutMs)
-    ),
-  ]);
+  const timeoutPromise = new Promise((_, reject) =>
+    setTimeout(() => reject(new Error("Timeout")), timeoutMs)
+  );
+
+  // Wait for either scan completion or timeout
+  return Promise.race([runZapScan(siteUrl), timeoutPromise]);
 }
 
 app.post("/scan", async (req, res) => {
@@ -60,8 +58,13 @@ app.post("/scan", async (req, res) => {
   try {
     result = await runZapWithTimeout(siteUrl);
   } catch (err) {
-    console.error("❌ Internal ZAP error:", err.message);
-    result = { status: "Error", alerts: [] };
+    if (err.message === "Timeout") {
+      console.warn(`⚠️ ZAP scan timed out after 3 minutes`);
+      result = { status: "Timeout", alerts: [] };
+    } else {
+      console.error("❌ Internal ZAP error:", err.message);
+      result = { status: "Error", alerts: [] };
+    }
   }
 
   const findings = result.alerts || [];
