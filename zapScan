@@ -7,9 +7,7 @@ const API_KEY = process.env.ZAP_API_KEY || "gardian123";
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 
 async function waitForZapReady(maxMs = 180000) {
-  // Short delay before first poll, so API extension has time to load
-  await sleep(5000);
-
+  await sleep(5000); // give API extension time to load
   const deadline = Date.now() + maxMs;
   while (Date.now() < deadline) {
     try {
@@ -31,22 +29,12 @@ async function waitForImplementors(maxMs = 90000) {
   while (Date.now() < deadline) {
     let spiderOK = false;
     let ascanOK = false;
-
-    try {
-      await axios.get(`${ZAP_API}/JSON/spider/view/scans/`, { params: { apikey: API_KEY } });
-      spiderOK = true;
-    } catch {}
-
-    try {
-      await axios.get(`${ZAP_API}/JSON/ascan/view/scans/`, { params: { apikey: API_KEY } });
-      ascanOK = true;
-    } catch {}
-
+    try { await axios.get(`${ZAP_API}/JSON/spider/view/scans/`, { params: { apikey: API_KEY } }); spiderOK = true; } catch {}
+    try { await axios.get(`${ZAP_API}/JSON/ascan/view/scans/`, { params: { apikey: API_KEY } }); ascanOK = true; } catch {}
     if (spiderOK && ascanOK) {
       console.log("✅ Implementors ready: spider + ascan");
       return true;
     }
-
     console.log(`⏳ Implementors not ready yet (spider=${spiderOK}, ascan=${ascanOK})`);
     await sleep(3000);
   }
