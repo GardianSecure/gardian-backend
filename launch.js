@@ -24,6 +24,7 @@ setTimeout(() => {
     "-config", "autoupdate.optionInstallScannerRules=false",
     "-config", "autoupdate.optionInstallOptionalAddOns=false",
     "-config", "autoupdate.optionInstallBetaAddOns=false",
+    // Uninstall noisy add-ons
     "-addonuninstall", "selenium",
     "-addonuninstall", "client",
     "-addonuninstall", "oast",
