@@ -6,8 +6,8 @@ const ZAP_API = `http://127.0.0.1:${zapPort}`;
 const API_KEY = process.env.ZAP_API_KEY || "gardian123";
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 
-async function waitForZapReady(maxMs = 180000) {
-  await sleep(5000); // give API extension time to load
+async function waitForZapReady(maxMs = 300000) { // was 180000 → now 300000 (5 minutes)
+  await sleep(10000); // was 5000 → now 10000 (10 seconds initial wait)
   const deadline = Date.now() + maxMs;
   while (Date.now() < deadline) {
     try {
@@ -19,12 +19,12 @@ async function waitForZapReady(maxMs = 180000) {
     } catch {
       console.log("⏳ Waiting for ZAP API...");
     }
-    await sleep(3000);
+    await sleep(5000); // was 3000 → now 5000
   }
   throw new Error("❌ ZAP API did not become ready in time");
 }
 
-async function waitForImplementors(maxMs = 90000) {
+async function waitForImplementors(maxMs = 180000) { // was 90000 → now 180000 (3 minutes)
   const deadline = Date.now() + maxMs;
   while (Date.now() < deadline) {
     let spiderOK = false;
@@ -36,7 +36,7 @@ async function waitForImplementors(maxMs = 90000) {
       return true;
     }
     console.log(`⏳ Implementors not ready yet (spider=${spiderOK}, ascan=${ascanOK})`);
-    await sleep(3000);
+    await sleep(5000); // was 3000 → now 5000
   }
   throw new Error("❌ Required implementors (spider/ascan) not ready in time");
 }
@@ -59,7 +59,7 @@ async function runZapScan(siteUrl) {
     });
     spiderProgress = parseInt(statusRes.data?.status ?? "0", 10);
     console.log(`⏳ Spider progress: ${spiderProgress}%`);
-    await sleep(3000);
+    await sleep(5000); // was 3000 → now 5000
   }
   console.log("✅ Spider completed");
 
@@ -77,12 +77,12 @@ async function runZapScan(siteUrl) {
     });
     progress = parseInt(statusRes.data?.status ?? "0", 10);
     console.log(`⏳ Scan progress: ${progress}%`);
-    await sleep(5000);
+    await sleep(10000); // was 5000 → now 10000
   }
   console.log("✅ Active scan completed");
 
   // Delay before fetching alerts (let passive rules finish)
-  await sleep(5000);
+  await sleep(30000); // was 5000 → now 30000 (30 seconds)
 
   // Alerts (normalize base URL + pagination)
   const normalizedUrl = siteUrl.endsWith("/") ? siteUrl : siteUrl + "/";
