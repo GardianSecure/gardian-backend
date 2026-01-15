@@ -71,29 +71,3 @@ async function runZapScan(siteUrl) {
   const scanId = scanRes.data?.scan;
   if (!scanId) throw new Error("❌ Active scan failed to start");
   let progress = 0;
-  while (progress < 100) {
-    const statusRes = await axios.get(`${ZAP_API}/JSON/ascan/view/status/`, {
-      params: { apikey: API_KEY, scanId }
-    });
-    progress = parseInt(statusRes.data?.status ?? "0", 10);
-    console.log(`⏳ Scan progress: ${progress}%`);
-    await sleep(5000);
-  }
-  console.log("✅ Active scan completed");
-
-  // Delay before fetching alerts (let passive rules finish)
-  await sleep(5000);
-
-  // Alerts (normalize base URL + pagination)
-  const normalizedUrl = siteUrl.endsWith("/") ? siteUrl : siteUrl + "/";
-  const alertsRes = await axios.get(`${ZAP_API}/JSON/alert/view/alerts/`, {
-    params: { apikey: API_KEY, baseurl: normalizedUrl, start: 0, count: 9999 }
-  });
-  const alerts = alertsRes.data.alerts || [];
-  console.log(`✅ Retrieved ${alerts.length} alerts`);
-
-  return { status: "Complete", alerts };
-}
-
-module.exports = runZapScan;
-
