@@ -71,9 +71,6 @@ function buildHtml(reportSummary = {}, reportId, siteUrl) {
       <p style="margin:6px 0; color:#666;">
         Report ID: ${escapeHtml(reportId || "")}
       </p>
-      <p style="margin:6px 0; color:#666;">
-        Note: This email shows a summary. For full details, check your GardianX dashboard.
-      </p>
     </div>
   `;
 }
@@ -105,7 +102,6 @@ function buildText(reportSummary = {}, reportId, siteUrl) {
     issuesText,
     "",
     `Report ID: ${reportId || ""}`,
-    "Note: This email shows a summary. For full details, check your GardianX dashboard."
   ].join("\n");
 }
 
@@ -136,3 +132,4 @@ async function sendReportEmail(to, reportSummary, reportId, siteUrl) {
 }
 
 module.exports = sendReportEmail;
+
