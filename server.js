@@ -90,7 +90,9 @@ app.post("/scan", async (req, res) => {
   };
 
   try {
+    // ✅ Email is only sent after scan completes or timeout
     await sendReportEmail(email, summary, submission.id, siteUrl);
+    console.log(`✅ Report email sent to ${email}`);
   } catch (err) {
     console.error("❌ Failed to send email:", err);
   }
