@@ -27,7 +27,6 @@ async function runZapWithTimeout(siteUrl) {
     setTimeout(() => reject(new Error("Timeout")), timeoutMs)
   );
 
-  // Wait for either scan completion or timeout
   return Promise.race([runZapScan(siteUrl), timeoutPromise]);
 }
 
@@ -90,7 +89,6 @@ app.post("/scan", async (req, res) => {
   };
 
   try {
-    // ✅ Email is only sent after scan completes or timeout
     await sendReportEmail(email, summary, submission.id, siteUrl);
     console.log(`✅ Report email sent to ${email}`);
   } catch (err) {
