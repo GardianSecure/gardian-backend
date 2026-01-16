@@ -6,8 +6,8 @@ const ZAP_API = `http://127.0.0.1:${zapPort}`;
 const API_KEY = process.env.ZAP_API_KEY || "gardian123";
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 
-async function waitForZapReady(maxMs = 300000) { // up to 5 minutes
-  await sleep(5000); // initial wait 5s
+async function waitForZapReady(maxMs = 600000) { // was 300000 → now 600000 (10 minutes)
+  await sleep(5000); // initial wait
   const deadline = Date.now() + maxMs;
   while (Date.now() < deadline) {
     try {
@@ -24,7 +24,7 @@ async function waitForZapReady(maxMs = 300000) { // up to 5 minutes
   throw new Error("❌ ZAP API did not become ready in time");
 }
 
-async function waitForImplementors(maxMs = 180000) { // up to 3 minutes
+async function waitForImplementors(maxMs = 180000) {
   const deadline = Date.now() + maxMs;
   while (Date.now() < deadline) {
     let spiderOK = false;
@@ -36,7 +36,7 @@ async function waitForImplementors(maxMs = 180000) { // up to 3 minutes
       return true;
     }
     console.log(`⏳ Implementors not ready yet (spider=${spiderOK}, ascan=${ascanOK})`);
-    await sleep(3000); // poll every 3s
+    await sleep(3000);
   }
   throw new Error("❌ Required implementors (spider/ascan) not ready in time");
 }
@@ -59,7 +59,7 @@ async function runZapScan(siteUrl) {
     });
     spiderProgress = parseInt(statusRes.data?.status ?? "0", 10);
     console.log(`⏳ Spider progress: ${spiderProgress}%`);
-    await sleep(3000); // poll every 3s
+    await sleep(3000);
   }
   console.log("✅ Spider completed");
 
@@ -77,7 +77,7 @@ async function runZapScan(siteUrl) {
     });
     progress = parseInt(statusRes.data?.status ?? "0", 10);
     console.log(`⏳ Scan progress: ${progress}%`);
-    await sleep(5000); // poll every 5s
+    await sleep(5000);
   }
   console.log("✅ Active scan completed");
 
