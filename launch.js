@@ -31,8 +31,10 @@ setTimeout(() => {
     "-addonuninstall", "callhome"
   ];
 
+  console.log("🛠️ ZAP spawn args:", args.join(" "));
   spawn("/opt/zap/zap.sh", args, { stdio: "inherit" });
   console.log("✅ ZAP spawn command executed");
 
+  // keep process alive
   setInterval(() => {}, 1000);
-}, 15000);
+}, 20000); // was 15000 → now 20000
