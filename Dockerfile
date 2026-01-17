@@ -27,4 +27,4 @@ EXPOSE 8080
 
 # Start both ZAP daemon and backend
 # ZAP runs headless with API enabled, then backend starts
-CMD ["/bin/sh", "-c", "/opt/zap/zap.sh -daemon -host 0.0.0.0 -port 8080 -config api.disablekey=true & npm start"]
+CMD ["/bin/sh", "-c", "/opt/zap/zap.sh -daemon -host 0.0.0.0 -port 8080 -config api.disablekey=true -addonuninstall selenium -addonuninstall client -addonuninstall oast -addonuninstall callhome & sleep 20 && npm start"]
