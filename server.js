@@ -17,11 +17,21 @@ app.get("/health", (req, res) => res.status(200).send("OK"));
 
 const submissions = [];
 
+// Normalize risk values for consistent counting
+function normalizeRisk(risk) {
+  if (!risk) return "Informational";
+  const r = risk.toLowerCase();
+  if (r === "high") return "High";
+  if (r === "medium") return "Medium";
+  if (r === "low") return "Low";
+  return "Informational";
+}
+
 // Run ZAP with timeout safeguard
 async function runZapWithTimeout(siteUrl) {
   const timeoutMs = process.env.ZAP_TIMEOUT_MS
     ? parseInt(process.env.ZAP_TIMEOUT_MS, 10)
-    : 180000; // default 3 minutes
+    : 900000; // default 15 minutes
 
   const timeoutPromise = new Promise((_, reject) =>
     setTimeout(() => reject(new Error("Timeout")), timeoutMs)
@@ -58,7 +68,7 @@ app.post("/scan", async (req, res) => {
     result = await runZapWithTimeout(siteUrl);
   } catch (err) {
     if (err.message === "Timeout") {
-      console.warn(`⚠️ ZAP scan timed out after 3 minutes`);
+      console.warn(`⚠️ ZAP scan timed out after ${process.env.ZAP_TIMEOUT_MS || "15 minutes"}`);
       result = { status: "Timeout", alerts: [] };
     } else {
       console.error("❌ Internal ZAP error:", err.message);
@@ -81,10 +91,10 @@ app.post("/scan", async (req, res) => {
   const summary = {
     status: result.status,
     totalFindings: findings.length,
-    high: findings.filter(f => f.risk === "High").length,
-    medium: findings.filter(f => f.risk === "Medium").length,
-    low: findings.filter(f => f.risk === "Low").length,
-    informational: findings.filter(f => f.risk === "Informational").length,
+    high: findings.filter(f => normalizeRisk(f.risk) === "High").length,
+    medium: findings.filter(f => normalizeRisk(f.risk) === "Medium").length,
+    low: findings.filter(f => normalizeRisk(f.risk) === "Low").length,
+    informational: findings.filter(f => normalizeRisk(f.risk) === "Informational").length,
     topIssues: findings.slice(0, 3),
   };
 
