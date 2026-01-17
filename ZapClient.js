@@ -23,7 +23,7 @@ async function runZapScan(targetUrl, apiKey = process.env.ZAP_API_KEY || "gardia
 
   // 2) Poll spider progress with timeout
   let spiderProgress = 0;
-  const spiderTimeout = Date.now() + 5 * 60 * 1000; // 5 minutes
+  const spiderTimeout = Date.now() + 10 * 60 * 1000; // was 5 → now 10 minutes
   while (spiderProgress < 100 && Date.now() < spiderTimeout) {
     const res = await fetch(
       `${ZAP_API_BASE}/JSON/spider/view/status/?scanId=${spiderId}&apikey=${apiKey}`
@@ -59,9 +59,10 @@ async function runZapScan(targetUrl, apiKey = process.env.ZAP_API_KEY || "gardia
   }
   console.log("✅ Active scan completed");
 
-  // 5) Get alerts
+  // 5) Get alerts (normalize base URL)
+  const normalizedUrl = targetUrl.endsWith("/") ? targetUrl : targetUrl + "/";
   const alertsRes = await fetch(
-    `${ZAP_API_BASE}/JSON/alert/view/alerts/?baseurl=${encodeURIComponent(targetUrl)}&apikey=${apiKey}`
+    `${ZAP_API_BASE}/JSON/alert/view/alerts/?baseurl=${encodeURIComponent(normalizedUrl)}&apikey=${apiKey}`
   );
   const alertsJson = await alertsRes.json();
   const alerts = alertsJson.alerts || [];
