@@ -18,13 +18,14 @@ setTimeout(() => {
     "-config", "api.key=gardian123",
     "-config", "api.addrs.addr.name=.*",
     "-config", "api.addrs.addr.regex=true",
-    "-config", "autoupdate.optionCheckOnStart=false",
-    "-config", "autoupdate.optionDownloadNewRelease=false",
-    "-config", "autoupdate.optionInstallNewExtensions=false",
-    "-config", "autoupdate.optionInstallScannerRules=false",
-    "-config", "autoupdate.optionInstallOptionalAddOns=false",
-    "-config", "autoupdate.optionInstallBetaAddOns=false",
-    // Uninstall noisy add-ons
+    // Disable ALL auto-update and add-on installs
+    "-config", "autoupdate.checkOnStart=false",
+    "-config", "autoupdate.downloadNewRelease=false",
+    "-config", "autoupdate.installAddonUpdates=false",
+    "-config", "autoupdate.installScannerRules=false",
+    "-config", "autoupdate.installOptionalAddOns=false",
+    "-config", "autoupdate.installBetaAddOns=false",
+    // Uninstall noisy add-ons that cause Firefox/OAST errors
     "-addonuninstall", "selenium",
     "-addonuninstall", "client",
     "-addonuninstall", "oast",
