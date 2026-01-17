@@ -1,14 +1,14 @@
 // launch.js
 const { spawn } = require("child_process");
 
-const appPort = process.env.PORT;
+const appPort = process.env.PORT || 10000;
 const zapPort = process.env.ZAP_PORT || "8080";
 
 console.log("🚀 Starting backend on port:", appPort);
 spawn("node", ["server.js"], { stdio: "inherit" });
 
 setTimeout(() => {
-  console.log(`🚀 Launching ZAP daemon on port ${zapPort} (separate from backend ${appPort})...`);
+  console.log(`🚀 Launching ZAP daemon on port ${zapPort}...`);
 
   const args = [
     "-daemon",
@@ -37,4 +37,4 @@ setTimeout(() => {
 
   // keep process alive
   setInterval(() => {}, 1000);
-}, 20000); // was 15000 → now 20000
+}, 20000); // give ZAP 20s head start
