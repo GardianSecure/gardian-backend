@@ -6,7 +6,17 @@ const ZAP_API = `http://127.0.0.1:${zapPort}`;
 const API_KEY = process.env.ZAP_API_KEY || "gardian123";
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 
-async function waitForZapReady(maxMs = 600000) { // was 300000 → now 600000 (10 minutes)
+// Normalize risk values for consistency
+function normalizeRisk(risk) {
+  if (!risk) return "Informational";
+  const r = risk.toLowerCase();
+  if (r === "high") return "High";
+  if (r === "medium") return "Medium";
+  if (r === "low") return "Low";
+  return "Informational";
+}
+
+async function waitForZapReady(maxMs = 600000) { // 10 minutes
   await sleep(5000); // initial wait
   const deadline = Date.now() + maxMs;
   while (Date.now() < deadline) {
@@ -24,7 +34,7 @@ async function waitForZapReady(maxMs = 600000) { // was 300000 → now 600000 (1
   throw new Error("❌ ZAP API did not become ready in time");
 }
 
-async function waitForImplementors(maxMs = 180000) {
+async function waitForImplementors(maxMs = 300000) { // was 180000 → now 300000 (5 minutes)
   const deadline = Date.now() + maxMs;
   while (Date.now() < deadline) {
     let spiderOK = false;
@@ -89,7 +99,10 @@ async function runZapScan(siteUrl) {
   const alertsRes = await axios.get(`${ZAP_API}/JSON/alert/view/alerts/`, {
     params: { apikey: API_KEY, baseurl: normalizedUrl, start: 0, count: 9999 }
   });
-  const alerts = alertsRes.data.alerts || [];
+  const alerts = (alertsRes.data.alerts || []).map(a => ({
+    ...a,
+    risk: normalizeRisk(a.risk)
+  }));
   console.log(`✅ Retrieved ${alerts.length} alerts`);
 
   return { status: "Complete", alerts };
