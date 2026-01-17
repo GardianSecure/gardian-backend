@@ -111,13 +111,16 @@ async function sendReportEmail(to, reportSummary, reportId, siteUrl) {
     throw new Error("Missing SENDGRID_VERIFIED_SENDER environment variable");
   }
 
+  const safeTo = escapeHtml(to);
   const subjectSite = siteUrl ? ` — ${siteUrl}` : "";
   const subjectStatus = reportSummary.status ? ` (${reportSummary.status})` : "";
+  const subject = `Your Gardian Security Scan Report${subjectSite}${subjectStatus}`.trim();
+
   const msg = {
-    to,
+    to: safeTo,
     from: process.env.SENDGRID_VERIFIED_SENDER,
     replyTo: process.env.SENDGRID_VERIFIED_SENDER,
-    subject: `Your Gardian Security Scan Report${subjectSite}${subjectStatus}`,
+    subject,
     html: buildHtml(reportSummary, reportId, siteUrl),
     text: buildText(reportSummary, reportId, siteUrl)
   };
@@ -132,4 +135,3 @@ async function sendReportEmail(to, reportSummary, reportId, siteUrl) {
 }
 
 module.exports = sendReportEmail;
-
