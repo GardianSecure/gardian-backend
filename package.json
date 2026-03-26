@@ -5,19 +5,22 @@
   "main": "server.js",
   "scripts": {
     "start": "node launch.js",
-    "dev": "nodemon launch.js"
+    "dev": "nodemon launch.js",
+    "test": "jest"
   },
   "dependencies": {
-    "@sendgrid/mail": "^8.1.6",
+    "@sendgrid/mail": "^8.1.6",   // temporary, will swap later
     "axios": "^1.12.2",
     "body-parser": "^1.20.2",
     "cors": "^2.8.5",
     "express": "^4.18.2",
     "uuid": "^11.1.0",
-    "node-fetch": "^2.6.7"
+    "node-fetch": "^2.6.7",
+    "dotenv": "^16.4.5"           // for local env management
   },
   "devDependencies": {
-    "nodemon": "^3.1.0"
+    "nodemon": "^3.1.0",
+    "jest": "^29.7.0"             // lightweight test runner
   },
   "engines": {
     "node": ">=18"
