@@ -1,47 +1,26 @@
-// server.js
 const express = require("express");
 const bodyParser = require("body-parser");
 const cors = require("cors");
 const fs = require("fs");
-const path = require("path");
 const { v4: uuidv4 } = require("uuid");
 
-const runZapScan = require("./zapScan");
-const sendReportEmail = require("./mailer");
+const { handleScanRequest } = require("./scanHandler");
 
 const app = express();
 app.use(cors());
 app.use(bodyParser.json());
 
+// Health check
 app.get("/health", (req, res) => res.status(200).send("OK"));
 
+// In-memory submissions list
 const submissions = [];
 
-// Normalize risk values for consistent counting
-function normalizeRisk(risk) {
-  if (!risk) return "Informational";
-  const r = risk.toLowerCase();
-  if (r === "high") return "High";
-  if (r === "medium") return "Medium";
-  if (r === "low") return "Low";
-  return "Informational";
-}
+// --- ROUTES ---
 
-// Run ZAP with timeout safeguard
-async function runZapWithTimeout(siteUrl) {
-  const timeoutMs = process.env.ZAP_TIMEOUT_MS
-    ? parseInt(process.env.ZAP_TIMEOUT_MS, 10)
-    : 900000; // default 15 minutes
-
-  const timeoutPromise = new Promise((_, reject) =>
-    setTimeout(() => reject(new Error("Timeout")), timeoutMs)
-  );
-
-  return Promise.race([runZapScan(siteUrl), timeoutPromise]);
-}
-
+// Start a new scan
 app.post("/scan", async (req, res) => {
-  const { siteUrl, email, consentGiven } = req.body;
+  const { siteUrl, email, consentGiven, tier = "Free" } = req.body;
   console.log("📩 Incoming scan request:", req.body);
 
   if (!siteUrl || !email || !consentGiven) {
@@ -53,6 +32,7 @@ app.post("/scan", async (req, res) => {
     siteUrl,
     email,
     consentGiven,
+    tier,
     timestamp: new Date().toISOString(),
   };
   submissions.push(submission);
@@ -63,53 +43,73 @@ app.post("/scan", async (req, res) => {
     console.error("❌ Failed to write submissions.json:", err);
   }
 
-  let result;
   try {
-    result = await runZapWithTimeout(siteUrl);
+    await handleScanRequest({
+      email: submission.email,
+      siteUrl: submission.siteUrl,
+      tier: submission.tier,
+    });
+
+    res.json({ message: "Scan complete.", id: submission.id });
   } catch (err) {
-    if (err.message === "Timeout") {
-      console.warn(`⚠️ ZAP scan timed out after ${process.env.ZAP_TIMEOUT_MS || "15 minutes"}`);
-      result = { status: "Timeout", alerts: [] };
-    } else {
-      console.error("❌ Internal ZAP error:", err.message);
-      result = { status: "Error", alerts: [] };
-    }
+    console.error("❌ Scan failed in handler:", err);
+    res.status(500).json({ error: "Scan failed." });
   }
-
-  const findings = result.alerts || [];
-  try {
-    const reportPath = path.join(__dirname, "reports");
-    if (!fs.existsSync(reportPath)) fs.mkdirSync(reportPath);
-    fs.writeFileSync(
-      path.join(reportPath, `report-${submission.id}.json`),
-      JSON.stringify(result, null, 2)
-    );
-  } catch (err) {
-    console.error("❌ Failed to write report file:", err);
-  }
-
-  const summary = {
-    status: result.status,
-    totalFindings: findings.length,
-    high: findings.filter(f => normalizeRisk(f.risk) === "High").length,
-    medium: findings.filter(f => normalizeRisk(f.risk) === "Medium").length,
-    low: findings.filter(f => normalizeRisk(f.risk) === "Low").length,
-    informational: findings.filter(f => normalizeRisk(f.risk) === "Informational").length,
-    topIssues: findings.slice(0, 3),
-  };
-
-  try {
-    await sendReportEmail(email, summary, submission.id, siteUrl);
-    console.log(`✅ Report email sent to ${email}`);
-  } catch (err) {
-    console.error("❌ Failed to send email:", err);
-  }
-
-  res.json({ message: "Scan complete.", id: submission.id, summary });
 });
 
+// Fetch all submissions
+app.get("/submissions", (req, res) => {
+  res.json({ submissions });
+});
+
+// Fetch a specific report by ID
+app.get("/reports/:id", (req, res) => {
+  const reportId = req.params.id;
+  const reportPath = `reports/report-${reportId}.json`;
+
+  if (!fs.existsSync(reportPath)) {
+    return res.status(404).json({ error: "Report not found." });
+  }
+
+  try {
+    const reportData = fs.readFileSync(reportPath, "utf-8");
+    res.json(JSON.parse(reportData));
+  } catch (err) {
+    console.error("❌ Failed to read report file:", err);
+    res.status(500).json({ error: "Failed to read report." });
+  }
+});
+
+// Rescan an existing submission
+app.post("/rescan/:id", async (req, res) => {
+  const submission = submissions.find(s => s.id === req.params.id);
+  if (!submission) {
+    return res.status(404).json({ error: "Submission not found." });
+  }
+
+  try {
+    await handleScanRequest({
+      email: submission.email,
+      siteUrl: submission.siteUrl,
+      tier: submission.tier,
+    });
+
+    res.json({ message: "Rescan complete.", id: submission.id });
+  } catch (err) {
+    console.error("❌ Rescan failed:", err);
+    res.status(500).json({ error: "Rescan failed." });
+  }
+});
+
+// --- ERROR HANDLING ---
 app.use((req, res) => res.status(404).send("❌ Route not found"));
 
+app.use((err, req, res, next) => {
+  console.error("❌ Unexpected error:", err);
+  res.status(500).json({ error: "Internal server error." });
+});
+
+// --- START SERVER ---
 const PORT = process.env.PORT || 10000;
 app.listen(PORT, "0.0.0.0", () => {
   console.log(`✅ GardianX backend running on port ${PORT}`);
