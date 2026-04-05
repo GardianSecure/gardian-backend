@@ -13,8 +13,19 @@ app.use(bodyParser.json());
 // Health check
 app.get("/health", (req, res) => res.status(200).send("OK"));
 
-// In-memory submissions list
-const submissions = [];
+// --- Load submissions from file at startup ---
+let submissions = [];
+const submissionsFile = "submissions.json";
+
+try {
+  if (fs.existsSync(submissionsFile)) {
+    const data = fs.readFileSync(submissionsFile, "utf-8");
+    submissions = JSON.parse(data);
+    console.log(`📂 Loaded ${submissions.length} submissions from ${submissionsFile}`);
+  }
+} catch (err) {
+  console.error("❌ Failed to load submissions.json:", err);
+}
 
 // --- ROUTES ---
 
@@ -38,7 +49,8 @@ app.post("/scan", async (req, res) => {
   submissions.push(submission);
 
   try {
-    fs.writeFileSync("submissions.json", JSON.stringify(submissions, null, 2));
+    fs.writeFileSync(submissionsFile, JSON.stringify(submissions, null, 2));
+    console.log(`💾 Saved submission ${submission.id} to ${submissionsFile}`);
   } catch (err) {
     console.error("❌ Failed to write submissions.json:", err);
   }
