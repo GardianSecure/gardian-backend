@@ -1,128 +1,104 @@
+//server.js
 const express = require("express");
 const bodyParser = require("body-parser");
-const cors = require("cors");
 const fs = require("fs");
-const { v4: uuidv4 } = require("uuid");
-
+const path = require("path");
 const { handleScanRequest } = require("./scanHandler");
 
 const app = express();
-app.use(cors());
 app.use(bodyParser.json());
 
-// Health check
-app.get("/health", (req, res) => res.status(200).send("OK"));
+const submissionsFile = path.join(__dirname, "submissions.json");
 
-// --- Load submissions from file at startup ---
-let submissions = [];
-const submissionsFile = "submissions.json";
-
-try {
-  if (fs.existsSync(submissionsFile)) {
-    const data = fs.readFileSync(submissionsFile, "utf-8");
-    submissions = JSON.parse(data);
-    console.log(`📂 Loaded ${submissions.length} submissions from ${submissionsFile}`);
+// Utility: load submissions
+function loadSubmissions() {
+  if (!fs.existsSync(submissionsFile)) return [];
+  try {
+    return JSON.parse(fs.readFileSync(submissionsFile, "utf8"));
+  } catch {
+    return [];
   }
-} catch (err) {
-  console.error("❌ Failed to load submissions.json:", err);
 }
 
-// --- ROUTES ---
+// Utility: save submissions
+function saveSubmissions(submissions) {
+  fs.writeFileSync(submissionsFile, JSON.stringify(submissions, null, 2));
+}
 
-// Start a new scan
+// --- Routes ---
+
+// Scan request
 app.post("/scan", async (req, res) => {
-  const { siteUrl, email, consentGiven, tier = "Free" } = req.body;
-  console.log("📩 Incoming scan request:", req.body);
-
-  if (!siteUrl || !email || !consentGiven) {
-    return res.status(400).json({ error: "Missing required fields or consent not given." });
+  const { email, siteUrl, tier } = req.body;
+  if (!email || !siteUrl) {
+    return res.status(400).json({ error: "Missing email or siteUrl" });
   }
 
-  const submission = {
-    id: uuidv4(),
-    siteUrl,
-    email,
-    consentGiven,
-    tier,
-    timestamp: new Date().toISOString(),
-  };
+  const submissions = loadSubmissions();
+  const submission = { id: Date.now().toString(), email, siteUrl, tier, status: "Pending" };
   submissions.push(submission);
+  saveSubmissions(submissions);
 
-  try {
-    fs.writeFileSync(submissionsFile, JSON.stringify(submissions, null, 2));
-    console.log(`💾 Saved submission ${submission.id} to ${submissionsFile}`);
-  } catch (err) {
-    console.error("❌ Failed to write submissions.json:", err);
-  }
-
-  try {
-    await handleScanRequest({
-      email: submission.email,
-      siteUrl: submission.siteUrl,
-      tier: submission.tier,
-    });
-
-    res.json({ message: "Scan complete.", id: submission.id });
-  } catch (err) {
-    console.error("❌ Scan failed in handler:", err);
-    res.status(500).json({ error: "Scan failed." });
-  }
+  handleScanRequest({ email, siteUrl, tier });
+  res.json({ message: "Scan started", id: submission.id });
 });
 
-// Fetch all submissions
+// List submissions
 app.get("/submissions", (req, res) => {
-  res.json({ submissions });
+  res.json(loadSubmissions());
 });
 
-// Fetch a specific report by ID
+// Fetch report
 app.get("/reports/:id", (req, res) => {
-  const reportId = req.params.id;
-  const reportPath = `reports/report-${reportId}.json`;
-
+  const reportPath = path.join(__dirname, "reports", `report-${req.params.id}.json`);
   if (!fs.existsSync(reportPath)) {
-    return res.status(404).json({ error: "Report not found." });
+    return res.status(404).json({ error: "Report not found" });
   }
-
-  try {
-    const reportData = fs.readFileSync(reportPath, "utf-8");
-    res.json(JSON.parse(reportData));
-  } catch (err) {
-    console.error("❌ Failed to read report file:", err);
-    res.status(500).json({ error: "Failed to read report." });
-  }
+  res.sendFile(reportPath);
 });
 
-// Rescan an existing submission
-app.post("/rescan/:id", async (req, res) => {
+// Rescan
+app.post("/rescan/:id", (req, res) => {
+  const submissions = loadSubmissions();
   const submission = submissions.find(s => s.id === req.params.id);
   if (!submission) {
-    return res.status(404).json({ error: "Submission not found." });
+    return res.status(404).json({ error: "Submission not found" });
   }
-
-  try {
-    await handleScanRequest({
-      email: submission.email,
-      siteUrl: submission.siteUrl,
-      tier: submission.tier,
-    });
-
-    res.json({ message: "Rescan complete.", id: submission.id });
-  } catch (err) {
-    console.error("❌ Rescan failed:", err);
-    res.status(500).json({ error: "Rescan failed." });
-  }
+  handleScanRequest(submission);
+  res.json({ message: "Rescan started", id: submission.id });
 });
 
-// --- ERROR HANDLING ---
-app.use((req, res) => res.status(404).send("❌ Route not found"));
+// --- New: Stats endpoint ---
+app.get("/stats", (req, res) => {
+  const submissions = loadSubmissions();
+  if (submissions.length === 0) {
+    return res.json({ totalScans: 0, averageFindings: 0, riskDistribution: {} });
+  }
 
-app.use((err, req, res, next) => {
-  console.error("❌ Unexpected error:", err);
-  res.status(500).json({ error: "Internal server error." });
+  let totalFindings = 0;
+  let riskCounts = { High: 0, Medium: 0, Low: 0, Informational: 0 };
+
+  submissions.forEach(sub => {
+    if (sub.summary) {
+      totalFindings += sub.summary.totalFindings || 0;
+      riskCounts.High += sub.summary.high || 0;
+      riskCounts.Medium += sub.summary.medium || 0;
+      riskCounts.Low += sub.summary.low || 0;
+      riskCounts.Informational += sub.summary.informational || 0;
+    }
+  });
+
+  const averageFindings = totalFindings / submissions.length;
+
+  res.json({
+    totalScans: submissions.length,
+    averageFindings,
+    riskDistribution: riskCounts
+  });
 });
 
-// --- START SERVER ---
-const PORT = process.env.PORT || 10000;
-app.listen(PORT, "0.0.0.0", () => {
-  console.log(`✅ GardianX backend running on port ${PORT}`);
+// Start server
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+  console.log(`🚀 GardianX server running on port ${PORT}`);
 });
