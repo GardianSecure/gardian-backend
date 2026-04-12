@@ -1,4 +1,3 @@
-//server.js
 const express = require("express");
 const bodyParser = require("body-parser");
 const fs = require("fs");
@@ -15,17 +14,27 @@ function loadSubmissions() {
   if (!fs.existsSync(submissionsFile)) return [];
   try {
     return JSON.parse(fs.readFileSync(submissionsFile, "utf8"));
-  } catch {
+  } catch (err) {
+    console.error("❌ Failed to parse submissions file:", err.message);
     return [];
   }
 }
 
 // Utility: save submissions
 function saveSubmissions(submissions) {
-  fs.writeFileSync(submissionsFile, JSON.stringify(submissions, null, 2));
+  try {
+    fs.writeFileSync(submissionsFile, JSON.stringify(submissions, null, 2));
+  } catch (err) {
+    console.error("❌ Failed to save submissions:", err.message);
+  }
 }
 
 // --- Routes ---
+
+// Healthcheck (for Docker/Render monitoring)
+app.get("/health", (req, res) => {
+  res.send("OK");
+});
 
 // Scan request
 app.post("/scan", async (req, res) => {
@@ -39,6 +48,7 @@ app.post("/scan", async (req, res) => {
   submissions.push(submission);
   saveSubmissions(submissions);
 
+  // Fire off scan asynchronously
   handleScanRequest({ email, siteUrl, tier });
   res.json({ message: "Scan started", id: submission.id });
 });
@@ -68,7 +78,7 @@ app.post("/rescan/:id", (req, res) => {
   res.json({ message: "Rescan started", id: submission.id });
 });
 
-// --- New: Stats endpoint ---
+// Stats endpoint
 app.get("/stats", (req, res) => {
   const submissions = loadSubmissions();
   if (submissions.length === 0) {
@@ -98,7 +108,7 @@ app.get("/stats", (req, res) => {
 });
 
 // Start server
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 10000; // ✅ align with Dockerfile
 app.listen(PORT, () => {
   console.log(`🚀 GardianX server running on port ${PORT}`);
 });
