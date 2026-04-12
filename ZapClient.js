@@ -1,11 +1,15 @@
-// zapClient.js
 const fetch = require("node-fetch");
-const { waitForZapReady } = require("./zapClientUtils"); // renamed helper for clarity
+const { waitForZapReady } = require("./zapClientUtils"); // helper for readiness check
 
 const zapHost = process.env.ZAP_HOST || "127.0.0.1";
 const zapPort = process.env.ZAP_PORT || 8080;
 const ZAP_API_BASE = `http://${zapHost}:${zapPort}`;
-const apiKey = process.env.ZAP_API_KEY || "gardian123";
+
+// ✅ Require API key from environment (no hardcoded fallback)
+const apiKey = process.env.ZAP_API_KEY;
+if (!apiKey) {
+  throw new Error("ZAP_API_KEY is not set in environment variables");
+}
 
 async function runZapScan(targetUrl) {
   try {
