@@ -5,6 +5,11 @@ const fs = require("fs");
 const path = require("path");
 
 async function sendReportEmail(email, summary, reportId, siteUrl, tier = "Free") {
+  // ✅ Ensure environment variables are set
+  if (!process.env.SMTP_USER || !process.env.SMTP_PASS) {
+    throw new Error("SMTP_USER and SMTP_PASS must be set in environment variables");
+  }
+
   // Transporter uses Gmail with environment variables
   const transporter = nodemailer.createTransport({
     service: "gmail",
@@ -57,7 +62,7 @@ Thank you for using GardianX.
     await transporter.sendMail(mailOptions);
     console.log(`📧 Report email sent to ${email}`);
   } catch (err) {
-    console.error("❌ Failed to send email:", err);
+    console.error("❌ Failed to send email:", err.message);
   }
 }
 
