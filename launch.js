@@ -1,15 +1,19 @@
-// launch.js
 const { spawn } = require("child_process");
 
 const appPort = process.env.PORT || 10000;
 const zapPort = process.env.ZAP_PORT || "8080";
-const zapApiKey = process.env.ZAP_API_KEY || "gardian123";
+const zapApiKey = process.env.ZAP_API_KEY;
+
+if (!zapApiKey) {
+  throw new Error("ZAP_API_KEY must be set in environment variables");
+}
 
 console.log("🚀 Starting GardianX backend on port:", appPort);
 
 // Start backend
 const backend = spawn("node", ["server.js"], { stdio: "inherit" });
 backend.on("error", err => console.error("❌ Backend failed to start:", err));
+backend.on("exit", code => console.warn(`⚠️ Backend exited with code ${code}`));
 
 function launchZap() {
   console.log(`🚀 Launching ZAP daemon on port ${zapPort}...`);
