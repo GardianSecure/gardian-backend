@@ -2,10 +2,10 @@
 # Base: Node.js for backend
 FROM node:18-slim
 
-# Install Java 17 + tools + ZAP + extra scanners
+# Install Java 17 + tools + ZAP + extra scanners (Nikto removed)
 RUN apt-get update && apt-get install -y \
     wget tar curl openjdk-17-jre-headless \
-    nmap nikto openssl python3 python3-pip \
+    nmap openssl python3 python3-pip \
     && wget https://github.com/zaproxy/zaproxy/releases/download/v2.16.1/ZAP_2.16.1_Linux.tar.gz \
     && tar -xzf ZAP_2.16.1_Linux.tar.gz -C /opt \
     && mv /opt/ZAP_2.16.1 /opt/zap \
