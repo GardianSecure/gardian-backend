@@ -1,5 +1,5 @@
-//scanHandler.js
-const runZapScan = require("./zapClient"); // ✅ corrected to match zapClient.js filename
+// scanHandler.js
+const runZapScan = require("./zapScan"); // ✅ corrected import
 const sendReportEmail = require("./mailer");
 const fs = require("fs");
 const path = require("path");
