@@ -1,4 +1,4 @@
-//launch.js
+// launch.js
 const { spawn } = require("child_process");
 
 const appPort = process.env.PORT || 10000;
@@ -27,12 +27,16 @@ function launchZap() {
     "-config", `api.key=${zapApiKey}`,
     "-config", "api.addrs.addr.name=.*",
     "-config", "api.addrs.addr.regex=true",
+
+    // Disable auto-update so Selenium/OAST don’t get reinstalled
     "-config", "autoupdate.checkOnStart=false",
     "-config", "autoupdate.downloadNewRelease=false",
     "-config", "autoupdate.installAddonUpdates=false",
     "-config", "autoupdate.installScannerRules=false",
     "-config", "autoupdate.installOptionalAddOns=false",
     "-config", "autoupdate.installBetaAddOns=false",
+
+    // Explicitly uninstall problematic add-ons
     "-addonuninstall", "selenium",
     "-addonuninstall", "client",
     "-addonuninstall", "oast",
