@@ -20,28 +20,31 @@ function launchZap() {
   console.log(`🚀 Launching ZAP daemon on port ${zapPort}...`);
 
   const args = [
-    "-daemon",
-    "-host", "0.0.0.0",
-    "-port", zapPort,
-    "-config", "api.disablekey=false",
-    "-config", `api.key=${zapApiKey}`,
-    "-config", "api.addrs.addr.name=.*",
-    "-config", "api.addrs.addr.regex=true",
+  "-daemon",
+  "-host", "0.0.0.0",
+  "-port", zapPort,
+  "-config", "api.disablekey=false",
+  "-config", `api.key=${zapApiKey}`,
+  "-config", "api.addrs.addr.name=.*",
+  "-config", "api.addrs.addr.regex=true",
 
-    // Disable auto-update so Selenium/OAST don’t get reinstalled
-    "-config", "autoupdate.checkOnStart=false",
-    "-config", "autoupdate.downloadNewRelease=false",
-    "-config", "autoupdate.installAddonUpdates=false",
-    "-config", "autoupdate.installScannerRules=false",
-    "-config", "autoupdate.installOptionalAddOns=false",
-    "-config", "autoupdate.installBetaAddOns=false",
+  // Disable auto-update
+  "-config", "autoupdate.checkOnStart=false",
+  "-config", "autoupdate.downloadNewRelease=false",
+  "-config", "autoupdate.installAddonUpdates=false",
+  "-config", "autoupdate.installScannerRules=false",
+  "-config", "autoupdate.installOptionalAddOns=false",
+  "-config", "autoupdate.installBetaAddOns=false",
 
-    // Explicitly uninstall problematic add-ons
-    "-addonuninstall", "selenium",
-    "-addonuninstall", "client",
-    "-addonuninstall", "oast",
-    "-addonuninstall", "callhome"
-  ];
+  // Prevent loading default add-ons (critical)
+  "-nostdaddons",
+
+  // Explicitly install only safe add-ons
+  "-addoninstall", "pscanrules",
+  "-addoninstall", "ascanrules",
+  "-addoninstall", "reports",
+  "-addoninstall", "retire"
+];
 
   console.log("🛠️ ZAP spawn args:", args.join(" "));
   const zap = spawn("/opt/zap/zap.sh", args, { stdio: "inherit" });
