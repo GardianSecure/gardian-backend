@@ -35,5 +35,6 @@ EXPOSE 8080
 HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
   CMD curl -f http://localhost:10000/health || exit 1
 
-# Start backend (launch.js will spawn ZAP)
+# Start backend (launch.js will spawn ZAP with safe flags)
 CMD ["node", "launch.js"]
+
