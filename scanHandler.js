@@ -232,7 +232,7 @@ async function handleScanRequest({ email, siteUrl, tier = "Free" }) {
     ];
 
     const summary = {
-      status: "Complete",
+      status: zapResult.status === "Error" ? "Error" : "Complete",
       totalFindings: alerts.length,
       high: alerts.filter(a => normalizeRisk(a.risk) === "High").length,
       medium: alerts.filter(a => normalizeRisk(a.risk) === "Medium").length,
@@ -248,6 +248,8 @@ async function handleScanRequest({ email, siteUrl, tier = "Free" }) {
 
     await sendReportEmail(email, summary, reportId, siteUrl, tier);
     console.log(`✅ Report email sent to ${email} with status: ${summary.status}`);
+
+    return { summary, alerts }; // ✅ always return structured response
   } catch (err) {
     console.error("❌ Scan failed:", err);
 
@@ -267,6 +269,8 @@ async function handleScanRequest({ email, siteUrl, tier = "Free" }) {
     } catch (mailErr) {
       console.error("❌ Failed to send error report email:", mailErr.message);
     }
+
+    return { summary, alerts: [] }; // ✅ return error summary to frontend
   }
 }
 
