@@ -1,4 +1,4 @@
-//zapClient.js
+// zapClient.js
 const fetch = require("node-fetch");
 const { waitForZapReady } = require("./zapClientUtils"); // helper for readiness check
 
@@ -70,10 +70,11 @@ async function runZapScan(targetUrl) {
       alerts
     };
   } catch (err) {
-    console.error("❌ ZAP scan error:", err.message);
+    console.error("❌ ZAP scan error:", err);
     return {
       tool: "ZAP",
       status: "Error",
+      error: err.message,   // ✅ include error message for debugging
       alerts: []
     };
   }
