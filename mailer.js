@@ -1,4 +1,4 @@
-//mailer.js
+// mailer.js
 require("dotenv").config(); // Load variables from .env
 const nodemailer = require("nodemailer");
 const fs = require("fs");
@@ -33,7 +33,9 @@ Low Risk: ${summary.low}
 Informational: ${summary.informational}
 
 Top Issues:
-${summary.topIssues.map(i => `- ${i.name}: ${i.plainSummary}`).join("\n")}
+${summary.topIssues && summary.topIssues.length > 0 
+  ? summary.topIssues.map(i => `- ${i.name}: ${i.plainSummary}`).join("\n") 
+  : "No major issues detected."}
 
 Thank you for using GardianX.
 `;
@@ -47,11 +49,13 @@ Thank you for using GardianX.
         filename: `report-${reportId}.json`,
         path: reportPath
       });
+    } else {
+      console.warn(`⚠️ Report file not found at ${reportPath}, skipping attachment.`);
     }
   }
 
   const mailOptions = {
-    from: process.env.SMTP_USER,
+    from: `"GardianX Reports" <${process.env.SMTP_USER}>`,
     to: email,
     subject: `GardianX Scan Report - ${siteUrl}`,
     text: plainSummary,
@@ -62,7 +66,8 @@ Thank you for using GardianX.
     await transporter.sendMail(mailOptions);
     console.log(`📧 Report email sent to ${email}`);
   } catch (err) {
-    console.error("❌ Failed to send email:", err.message);
+    console.error("❌ Failed to send email:", err);
+    throw err; // ✅ bubble up error so backend can handle it
   }
 }
 
