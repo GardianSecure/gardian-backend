@@ -1,4 +1,4 @@
-//zapScan.js
+// zapScan.js
 const axios = require("axios");
 
 const zapPort = process.env.ZAP_PORT || 8080; // must match launch.js
@@ -112,8 +112,8 @@ async function runZapScan(siteUrl) {
 
     return { status: "Complete", alerts };
   } catch (err) {
-    console.error("❌ ZAP scan error:", err.message);
-    return { status: "Error", alerts: [] };
+    console.error("❌ ZAP scan error:", err);
+    return { status: "Error", error: err.message, alerts: [] }; // ✅ include error message
   }
 }
 
