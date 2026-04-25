@@ -6,7 +6,7 @@
   "scripts": {
     "start": "node launch.js",
     "dev": "nodemon launch.js",
-    "test": "jest"
+    "test": "jest --runInBand"
   },
   "dependencies": {
     "axios": "^1.12.2",
