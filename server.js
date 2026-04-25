@@ -1,3 +1,4 @@
+// server.js
 const express = require("express");
 const bodyParser = require("body-parser");
 const fs = require("fs");
@@ -48,9 +49,20 @@ app.post("/scan", async (req, res) => {
   submissions.push(submission);
   saveSubmissions(submissions);
 
-  // Fire off scan asynchronously
-  handleScanRequest({ email, siteUrl, tier });
-  res.json({ message: "Scan started", id: submission.id });
+  try {
+    // Run scan synchronously so frontend gets structured response
+    const { summary, alerts } = await handleScanRequest({ email, siteUrl, tier });
+    submission.status = summary.status;
+    submission.summary = summary;
+    saveSubmissions(submissions);
+
+    res.json({ message: "Scan complete", id: submission.id, summary, alerts });
+  } catch (err) {
+    console.error("❌ Scan endpoint error:", err.message);
+    submission.status = "Error";
+    saveSubmissions(submissions);
+    res.status(500).json({ error: "Scan failed", details: err.message });
+  }
 });
 
 // List submissions
@@ -68,14 +80,26 @@ app.get("/reports/:id", (req, res) => {
 });
 
 // Rescan
-app.post("/rescan/:id", (req, res) => {
+app.post("/rescan/:id", async (req, res) => {
   const submissions = loadSubmissions();
   const submission = submissions.find(s => s.id === req.params.id);
   if (!submission) {
     return res.status(404).json({ error: "Submission not found" });
   }
-  handleScanRequest(submission);
-  res.json({ message: "Rescan started", id: submission.id });
+
+  try {
+    const { summary, alerts } = await handleScanRequest(submission);
+    submission.status = summary.status;
+    submission.summary = summary;
+    saveSubmissions(submissions);
+
+    res.json({ message: "Rescan complete", id: submission.id, summary, alerts });
+  } catch (err) {
+    console.error("❌ Rescan error:", err.message);
+    submission.status = "Error";
+    saveSubmissions(submissions);
+    res.status(500).json({ error: "Rescan failed", details: err.message });
+  }
 });
 
 // Stats endpoint
