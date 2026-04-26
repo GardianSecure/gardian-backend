@@ -15,17 +15,24 @@ RUN apt-get update && apt-get install -y \
 
 # Create non-root user for ZAP
 RUN useradd -ms /bin/bash zapuser
-USER zapuser
 
 # Set working directory
 WORKDIR /app
 
-# Install backend dependencies
+# Copy package files first
 COPY package*.json ./
+
+# Give zapuser ownership of /app before npm install
+RUN chown -R zapuser:zapuser /app
+
+# Switch to zapuser
+USER zapuser
+
+# Install backend dependencies
 RUN npm install
 
 # Copy the rest of the backend
-COPY . .
+COPY --chown=zapuser:zapuser . .
 
 # Create reports directory (persistent volume mount recommended)
 RUN mkdir -p /app/reports
