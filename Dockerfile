@@ -31,6 +31,8 @@ EXPOSE 10000
 # Expose ZAP API port
 EXPOSE 8080
 
+RUN rm -rf /root/.ZAP/plugin/selenium* /root/.ZAP/plugin/client* /root/.ZAP/plugin/oast* /root/.ZAP/plugin/callhome*
+
 # Healthcheck for container monitoring
 HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
   CMD curl -f http://localhost:10000/health || exit 1
