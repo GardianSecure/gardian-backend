@@ -1,8 +1,8 @@
-#Dockerfile
+# Dockerfile
 # Base: Node.js for backend
 FROM node:18-slim
 
-# Install Java 17 + tools + ZAP + extra scanners (Nikto removed)
+# Install Java 17 + tools + ZAP
 RUN apt-get update && apt-get install -y \
     wget tar curl openjdk-17-jre-headless \
     nmap openssl python3 python3-pip \
@@ -12,6 +12,10 @@ RUN apt-get update && apt-get install -y \
     && rm ZAP_2.16.1_Linux.tar.gz \
     && chmod +x /opt/zap/zap.sh \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
+
+# Create non-root user for ZAP
+RUN useradd -ms /bin/bash zapuser
+USER zapuser
 
 # Set working directory
 WORKDIR /app
@@ -31,7 +35,11 @@ EXPOSE 10000
 # Expose ZAP API port
 EXPOSE 8080
 
-RUN rm -rf /root/.ZAP/plugin/selenium* /root/.ZAP/plugin/client* /root/.ZAP/plugin/oast* /root/.ZAP/plugin/callhome*
+# Cleanup unwanted ZAP add-ons (Selenium, Client, OAST, CallHome)
+RUN rm -rf /home/zapuser/.ZAP/plugin/selenium* \
+           /home/zapuser/.ZAP/plugin/client* \
+           /home/zapuser/.ZAP/plugin/oast* \
+           /home/zapuser/.ZAP/plugin/callhome*
 
 # Healthcheck for container monitoring
 HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
@@ -39,4 +47,3 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
 
 # Start backend (launch.js will spawn ZAP with safe flags)
 CMD ["node", "launch.js"]
-
