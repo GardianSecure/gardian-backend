@@ -31,7 +31,7 @@ USER zapuser
 # Install backend dependencies
 RUN npm install
 
-# Copy the rest of the backend
+# Copy the rest of the backend with correct ownership
 COPY --chown=zapuser:zapuser . .
 
 # Create reports directory (persistent volume mount recommended)
