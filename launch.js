@@ -32,9 +32,10 @@ function launchZap() {
   "-addoninstall", "retire",
   "-addonuninstall", "selenium",
   "-addonuninstall", "client",
-  "-addonuninstall", "oast",
-  "-addonuninstall", "callhome"
+  "-addonuninstall", "oast"
+  // ⚠️ Do NOT uninstall callhome — leave it installed
 ];
+
 
 
   console.log("🛠️ ZAP spawn args:", args.join(" "));
