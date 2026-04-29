@@ -3,7 +3,6 @@ const { spawn } = require("child_process");
 
 const appPort = process.env.PORT || 10000;
 const zapPort = process.env.ZAP_PORT || "8080";
-const zapApiKey = process.env.ZAP_API_KEY || "";
 
 console.log("🚀 Starting GardianX backend on port:", appPort);
 
@@ -19,7 +18,7 @@ function launchZap() {
     "-daemon",
     "-host", "0.0.0.0",
     "-port", zapPort,
-    "-config", "api.disablekey=true", // run without API key
+    "-config", "api.disablekey=true",
     "-config", "api.addrs.addr.name=.*",
     "-config", "api.addrs.addr.regex=true",
     "-config", "connection.timeoutInSecs=120",
@@ -29,7 +28,10 @@ function launchZap() {
     "-config", "autoupdate.downloadNewRelease=false",
     "-config", "autoupdate.installAddonUpdates=false",
 
-    // Install safe add-ons only (optional, comment out if unstable)
+    // Prevent unstable add-ons (no Selenium/Firefox)
+    "-nostdaddons",
+
+    // Install only safe add-ons
     "-addoninstall", "pscanrules",
     "-addoninstall", "ascanrules",
     "-addoninstall", "reports",
@@ -37,7 +39,7 @@ function launchZap() {
   ];
 
   console.log("🛠️ ZAP spawn args:", args.join(" "));
-  const zap = spawn("/opt/zap/zap.sh", args, { stdio: "inherit" });
+  const zap = spawn("/opt/ZAP_2.16.1/zap.sh", args, { stdio: "inherit" });
 
   zap.on("error", err => console.error("❌ Failed to launch ZAP:", err));
   zap.on("exit", code => console.warn(`⚠️ ZAP exited with code ${code}`));
