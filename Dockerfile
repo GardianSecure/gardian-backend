@@ -13,6 +13,12 @@ RUN wget -q https://github.com/zaproxy/zaproxy/releases/download/v2.16.1/ZAP_2.1
 
 ENV PATH="/opt/zap:${PATH}"
 
+# Remove unwanted add-ons directly from ZAP install dir
+RUN rm -rf /opt/zap/plugin/selenium* \
+           /opt/zap/plugin/client* \
+           /opt/zap/plugin/oast* \
+           /opt/zap/plugin/callhome*
+
 WORKDIR /app
 COPY package*.json ./
 RUN npm install
@@ -20,3 +26,4 @@ COPY . .
 
 EXPOSE 10000 8080
 CMD ["node", "launch.js"]
+
