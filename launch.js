@@ -3,11 +3,7 @@ const { spawn } = require("child_process");
 
 const appPort = process.env.PORT || 10000;
 const zapPort = process.env.ZAP_PORT || "8080";
-const zapApiKey = process.env.ZAP_API_KEY;
-
-if (!zapApiKey) {
-  throw new Error("ZAP_API_KEY must be set in environment variables");
-}
+const zapApiKey = process.env.ZAP_API_KEY || "";
 
 console.log("🚀 Starting GardianX backend on port:", appPort);
 
@@ -23,23 +19,17 @@ function launchZap() {
     "-daemon",
     "-host", "0.0.0.0",
     "-port", zapPort,
-    "-config", "api.disablekey=false",
-    "-config", `api.key=${zapApiKey}`,
+    "-config", "api.disablekey=true", // run without API key
     "-config", "api.addrs.addr.name=.*",
     "-config", "api.addrs.addr.regex=true",
+    "-config", "connection.timeoutInSecs=120",
 
-    // Disable auto-update completely
+    // Disable auto-update
     "-config", "autoupdate.checkOnStart=false",
     "-config", "autoupdate.downloadNewRelease=false",
     "-config", "autoupdate.installAddonUpdates=false",
-    "-config", "autoupdate.installScannerRules=false",
-    "-config", "autoupdate.installOptionalAddOns=false",
-    "-config", "autoupdate.installBetaAddOns=false",
 
-    // Prevent loading default add-ons
-    "-nostdaddons",
-
-    // Explicitly install only safe add-ons
+    // Install safe add-ons only (optional, comment out if unstable)
     "-addoninstall", "pscanrules",
     "-addoninstall", "ascanrules",
     "-addoninstall", "reports",
