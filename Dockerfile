@@ -1,7 +1,8 @@
 # Dockerfile for GardianX backend
 FROM node:18-slim
 
-RUN apt-get update && apt-get install -y wget curl unzip \
+# Install Java 17 + tools
+RUN apt-get update && apt-get install -y wget curl unzip openjdk-17-jre-headless \
     && rm -rf /var/lib/apt/lists/*
 
 # Install OWASP ZAP
