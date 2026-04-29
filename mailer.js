@@ -10,12 +10,15 @@ async function sendReportEmail(email, summary, reportId, siteUrl, tier = "Free")
   }
 
   const transporter = nodemailer.createTransport({
-    service: "gmail",
-    auth: {
-      user: process.env.SMTP_USER,
-      pass: process.env.SMTP_PASS
-    }
-  });
+  host: "smtp.gmail.com",
+  port: 465,
+  secure: true, // true for port 465
+  auth: {
+    user: process.env.SMTP_USER, // your Gmail address
+    pass: process.env.SMTP_PASS  // your Gmail App Password
+  }
+});
+
 
   const plainSummary = `
 Hello,
