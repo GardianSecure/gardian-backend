@@ -1,25 +1,22 @@
 // mailer.js
-require("dotenv").config(); // Load variables from .env
+require("dotenv").config();
 const nodemailer = require("nodemailer");
 const fs = require("fs");
 const path = require("path");
 
 async function sendReportEmail(email, summary, reportId, siteUrl, tier = "Free") {
-  // ✅ Ensure environment variables are set
   if (!process.env.SMTP_USER || !process.env.SMTP_PASS) {
     throw new Error("SMTP_USER and SMTP_PASS must be set in environment variables");
   }
 
-  // Transporter uses Gmail with environment variables
   const transporter = nodemailer.createTransport({
     service: "gmail",
     auth: {
-      user: process.env.SMTP_USER, // GardianX sender email
-      pass: process.env.SMTP_PASS  // Gmail App Password
+      user: process.env.SMTP_USER,
+      pass: process.env.SMTP_PASS
     }
   });
 
-  // Plain-language summary
   const plainSummary = `
 Hello,
 
@@ -40,7 +37,6 @@ ${summary.topIssues && summary.topIssues.length > 0
 Thank you for using GardianX.
 `;
 
-  // Attach full JSON report for Pro tier
   const attachments = [];
   if (tier === "Pro") {
     const reportPath = path.join(__dirname, "reports", `report-${reportId}.json`);
@@ -66,8 +62,8 @@ Thank you for using GardianX.
     await transporter.sendMail(mailOptions);
     console.log(`📧 Report email sent to ${email}`);
   } catch (err) {
-    console.error("❌ Failed to send email:", err);
-    throw err; // ✅ bubble up error so backend can handle it
+    console.error("❌ Failed to send email:", err.message);
+    throw err;
   }
 }
 
