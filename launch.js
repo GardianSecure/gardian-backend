@@ -22,16 +22,10 @@ function launchZap() {
     "-config", "api.addrs.addr.name=.*",
     "-config", "api.addrs.addr.regex=true",
     "-config", "connection.timeoutInSecs=120",
-
-    // Disable auto-update
     "-config", "autoupdate.checkOnStart=false",
     "-config", "autoupdate.downloadNewRelease=false",
     "-config", "autoupdate.installAddonUpdates=false",
-
-    // Prevent unstable add-ons (no Selenium/Firefox)
     "-nostdaddons",
-
-    // Install only safe add-ons
     "-addoninstall", "pscanrules",
     "-addoninstall", "ascanrules",
     "-addoninstall", "reports",
@@ -39,13 +33,14 @@ function launchZap() {
   ];
 
   console.log("🛠️ ZAP spawn args:", args.join(" "));
-  const zap = spawn("/opt/ZAP_2.16.1/zap.sh", args, { stdio: "inherit" });
+  const zap = spawn("/opt/zap/zap.sh", args, { stdio: "inherit" });
 
   zap.on("error", err => console.error("❌ Failed to launch ZAP:", err));
   zap.on("exit", code => console.warn(`⚠️ ZAP exited with code ${code}`));
 
   console.log("✅ ZAP spawn command executed");
 }
+
 
 // Launch ZAP after backend is up
 setTimeout(launchZap, 20000);
