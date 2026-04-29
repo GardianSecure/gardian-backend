@@ -61,6 +61,10 @@ async function runZapScan(siteUrl) {
   try {
     console.log(`🔍 Starting ZAP scan for ${siteUrl}`);
 
+  await waitForZapReady();
+  await waitForImplementors();
+
+
     // Spider
     const spiderResp = await fetch(
       `${zapApi}/JSON/spider/action/scan/?url=${encodeURIComponent(siteUrl)}`
