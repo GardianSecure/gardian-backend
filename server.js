@@ -40,9 +40,7 @@ app.get("/health", (req, res) => {
 // Scan request
 app.post("/scan", async (req, res) => {
   const { email, siteUrl, tier } = req.body;
-  if (!email || !siteUrl) {
-    return res.status(400).json({ error: "Missing email or siteUrl" });
-  }
+  if (!email || !siteUrl) return res.status(400).json({ error: "Missing email or siteUrl" });
 
   const submissions = loadSubmissions();
   const submission = { id: Date.now().toString(), email, siteUrl, tier, status: "Pending" };
@@ -50,15 +48,12 @@ app.post("/scan", async (req, res) => {
   saveSubmissions(submissions);
 
   try {
-    // Run scan synchronously so frontend gets structured response
     const { summary, alerts } = await handleScanRequest({ email, siteUrl, tier });
     submission.status = summary.status;
     submission.summary = summary;
     saveSubmissions(submissions);
-
     res.json({ message: "Scan complete", id: submission.id, summary, alerts });
   } catch (err) {
-    console.error("❌ Scan endpoint error:", err.message);
     submission.status = "Error";
     saveSubmissions(submissions);
     res.status(500).json({ error: "Scan failed", details: err.message });
