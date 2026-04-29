@@ -17,7 +17,7 @@
     "node-fetch": "^2.6.7",
     "dotenv": "^16.4.5",
     "nodemailer": "^6.9.11",
-    "@sendgrid/mail": "^8.1.0"   // ✅ Add this line
+    "@sendgrid/mail": "^8.1.0"
   },
   "devDependencies": {
     "nodemon": "^3.1.0",
