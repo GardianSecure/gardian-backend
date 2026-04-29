@@ -1,5 +1,5 @@
 // scanHandler.js
-const runZapScan = require("./zapScan"); // ✅ corrected import
+const runZapScan = require("./zapScan");
 const sendReportEmail = require("./mailer");
 const fs = require("fs");
 const path = require("path");
@@ -158,9 +158,7 @@ async function runContentScan(siteUrl) {
     const res = await fetch(siteUrl);
     const html = await res.text();
 
-    // Insecure forms
-    const formMatches = html.match(/<form[^>]*action=["']http:/gi);
-    if (formMatches) {
+    if (html.match(/<form[^>]*action=["']http:/gi)) {
       results.push({
         name: "Insecure Form Action",
         risk: "High",
@@ -168,21 +166,15 @@ async function runContentScan(siteUrl) {
       });
     }
 
-    // Mixed content
-    if (siteUrl.startsWith("https://")) {
-      const mixedMatches = html.match(/src=["']http:/gi);
-      if (mixedMatches) {
-        results.push({
-          name: "Mixed Content",
-          risk: "Medium",
-          plainSummary: "Page loads resources over HTTP on an HTTPS site.",
-        });
-      }
+    if (siteUrl.startsWith("https://") && html.match(/src=["']http:/gi)) {
+      results.push({
+        name: "Mixed Content",
+        risk: "Medium",
+        plainSummary: "Page loads resources over HTTP on an HTTPS site.",
+      });
     }
 
-    // Missing alt attributes
-    const imgMatches = html.match(/<img(?![^>]*alt=)[^>]*>/gi);
-    if (imgMatches) {
+    if (html.match(/<img(?![^>]*alt=)[^>]*>/gi)) {
       results.push({
         name: "Missing Alt Attributes",
         risk: "Low",
@@ -214,7 +206,6 @@ async function handleScanRequest({ email, siteUrl, tier = "Free" }) {
   try {
     console.log(`📩 Incoming scan request for ${siteUrl}, email: ${email}, tier: ${tier}`);
 
-    // Run all scanners in parallel
     const [zapResult, sslResult, headerResult, dependencyResult, contentResult] = await Promise.all([
       runZapScan(siteUrl),
       runSslScan(siteUrl),
@@ -238,7 +229,7 @@ async function handleScanRequest({ email, siteUrl, tier = "Free" }) {
       medium: alerts.filter(a => normalizeRisk(a.risk) === "Medium").length,
       low: alerts.filter(a => normalizeRisk(a.risk) === "Low").length,
       informational: alerts.filter(a => normalizeRisk(a.risk) === "Informational").length,
-      topIssues: alerts.slice(0, 5)
+      topIssues: alerts.slice(0, 5),
     };
 
     const reportsDir = path.join(__dirname, "reports");
@@ -249,7 +240,8 @@ async function handleScanRequest({ email, siteUrl, tier = "Free" }) {
     await sendReportEmail(email, summary, reportId, siteUrl, tier);
     console.log(`✅ Report email sent to ${email} with status: ${summary.status}`);
 
-    return { summary, alerts }; // ✅ always return structured response
+    // Always return structured response to frontend
+    return { summary, alerts };
   } catch (err) {
     console.error("❌ Scan failed:", err);
 
@@ -270,7 +262,8 @@ async function handleScanRequest({ email, siteUrl, tier = "Free" }) {
       console.error("❌ Failed to send error report email:", mailErr.message);
     }
 
-    return { summary, alerts: [] }; // ✅ return error summary to frontend
+    // Return error summary to frontend
+    return { summary, alerts: [] };
   }
 }
 
