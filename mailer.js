@@ -1,25 +1,11 @@
-// mailer.js
 require("dotenv").config();
-const nodemailer = require("nodemailer");
+const sgMail = require("@sendgrid/mail");
 const fs = require("fs");
 const path = require("path");
 
+sgMail.setApiKey(process.env.SENDGRID_API_KEY);
+
 async function sendReportEmail(email, summary, reportId, siteUrl, tier = "Free") {
-  if (!process.env.SMTP_USER || !process.env.SMTP_PASS) {
-    throw new Error("SMTP_USER and SMTP_PASS must be set in environment variables");
-  }
-
-  const transporter = nodemailer.createTransport({
-  host: "smtp.gmail.com",
-  port: 465,
-  secure: true, // true for port 465
-  auth: {
-    user: process.env.SMTP_USER, // your Gmail address
-    pass: process.env.SMTP_PASS  // your Gmail App Password
-  }
-});
-
-
   const plainSummary = `
 Hello,
 
@@ -45,24 +31,24 @@ Thank you for using GardianX.
     const reportPath = path.join(__dirname, "reports", `report-${reportId}.json`);
     if (fs.existsSync(reportPath)) {
       attachments.push({
+        content: fs.readFileSync(reportPath).toString("base64"),
         filename: `report-${reportId}.json`,
-        path: reportPath
+        type: "application/json",
+        disposition: "attachment"
       });
-    } else {
-      console.warn(`⚠️ Report file not found at ${reportPath}, skipping attachment.`);
     }
   }
 
-  const mailOptions = {
-    from: `"GardianX Reports" <${process.env.SMTP_USER}>`,
+  const msg = {
     to: email,
+    from: `"GardianX Reports" <${process.env.SMTP_USER}>`, // use a verified sender in SendGrid
     subject: `GardianX Scan Report - ${siteUrl}`,
     text: plainSummary,
     attachments
   };
 
   try {
-    await transporter.sendMail(mailOptions);
+    await sgMail.send(msg);
     console.log(`📧 Report email sent to ${email}`);
   } catch (err) {
     console.error("❌ Failed to send email:", err.message);
