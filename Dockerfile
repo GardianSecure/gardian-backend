@@ -1,56 +1,36 @@
-# Dockerfile
-# Base: Node.js for backend
+# Base image with Node.js
 FROM node:18-slim
 
-# Install Java 17 + tools + ZAP
+# Install dependencies: wget, curl, unzip, etc.
 RUN apt-get update && apt-get install -y \
-    wget tar curl openjdk-17-jre-headless \
-    nmap openssl python3 python3-pip \
-    && wget https://github.com/zaproxy/zaproxy/releases/download/v2.16.1/ZAP_2.16.1_Linux.tar.gz \
-    && tar -xzf ZAP_2.16.1_Linux.tar.gz -C /opt \
-    && mv /opt/ZAP_2.16.1 /opt/zap \
-    && rm ZAP_2.16.1_Linux.tar.gz \
-    && chmod +x /opt/zap/zap.sh \
-    && apt-get clean && rm -rf /var/lib/apt/lists/*
+    wget \
+    curl \
+    unzip \
+    firefox-esr \
+    && rm -rf /var/lib/apt/lists/*
 
-# Create non-root user for ZAP
-RUN useradd -ms /bin/bash zapuser
+# Install Geckodriver
+RUN wget -q https://github.com/mozilla/geckodriver/releases/download/v0.34.0/geckodriver-v0.34.0-linux64.tar.gz \
+    && tar -xzf geckodriver-v0.34.0-linux64.tar.gz -C /usr/local/bin \
+    && rm geckodriver-v0.34.0-linux64.tar.gz
+
+# Install OWASP ZAP
+RUN wget -q https://github.com/zaproxy/zaproxy/releases/download/v2.16.1/ZAP_2.16.1_Linux.tar.gz \
+    && tar -xzf ZAP_2.16.1_Linux.tar.gz -C /opt \
+    && rm ZAP_2.16.1_Linux.tar.gz
+
+ENV PATH="/opt/ZAP_2.16.1:/usr/local/bin:${PATH}"
 
 # Set working directory
 WORKDIR /app
 
-# Copy package files first
+# Copy backend files
 COPY package*.json ./
-
-# Give zapuser ownership of /app before npm install
-RUN chown -R zapuser:zapuser /app
-
-# Switch to zapuser
-USER zapuser
-
-# Install backend dependencies
 RUN npm install
+COPY . .
 
-# Copy the rest of the backend with correct ownership
-COPY --chown=zapuser:zapuser . .
+# Expose ports
+EXPOSE 10000 8080
 
-# Create reports directory (persistent volume mount recommended)
-RUN mkdir -p /app/reports
-
-# Expose backend port (Render injects $PORT at runtime)
-EXPOSE 10000
-# Expose ZAP API port
-EXPOSE 8080
-
-# Cleanup unwanted ZAP add-ons (Selenium, Client, OAST, CallHome)
-RUN rm -rf /home/zapuser/.ZAP/plugin/selenium* \
-           /home/zapuser/.ZAP/plugin/client* \
-           /home/zapuser/.ZAP/plugin/oast* \
-           /home/zapuser/.ZAP/plugin/callhome*
-
-# Healthcheck for container monitoring
-HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
-  CMD curl -f http://localhost:10000/health || exit 1
-
-# Start backend (launch.js will spawn ZAP with safe flags)
+# Start backend (launch.js will spawn ZAP + server.js)
 CMD ["node", "launch.js"]
