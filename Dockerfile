@@ -17,7 +17,6 @@ ENV PATH="/opt/zap:${PATH}"
 RUN rm -rf /opt/zap/plugin/selenium* \
            /opt/zap/plugin/client* \
            /opt/zap/plugin/oast* \
-           /opt/zap/plugin/callhome*
 
 WORKDIR /app
 COPY package*.json ./
