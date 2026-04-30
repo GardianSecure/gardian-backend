@@ -1,4 +1,3 @@
-// scanHandler.js
 const runZapScan = require("./zapScan");
 const sendReportEmail = require("./mailer");
 const fs = require("fs");
@@ -246,6 +245,35 @@ async function handleScanRequest({ email, siteUrl, tier = "Free" }) {
     await sendReportEmail(email, summary, reportId, siteUrl, tier);
     console.log(`✅ Report email sent to ${email} with status: ${summary.status}`);
 
+    // --- Save submission record ---
+    const submissionsPath = path.join(__dirname, "submissions.json");
+    let submissions = [];
+    try {
+      if (fs.existsSync(submissionsPath)) {
+        submissions = JSON.parse(fs.readFileSync(submissionsPath));
+      }
+    } catch (readErr) {
+      console.error("⚠️ Failed to read submissions.json, starting fresh:", readErr.message);
+      submissions = [];
+    }
+
+    submissions.push({
+      id: reportId,
+      email,
+      siteUrl,
+      tier,
+      status: summary.status,
+      reportFile: `report-${reportId}.json`,
+      timestamp: new Date().toISOString()
+    });
+
+        try {
+      fs.writeFileSync(submissionsPath, JSON.stringify(submissions, null, 2));
+      console.log(`📂 Submission saved for ${email} (${siteUrl})`);
+    } catch (writeErr) {
+      console.error("❌ Failed to save submission:", writeErr.message);
+    }
+
     return { summary, alerts };
   } catch (err) {
     console.error("❌ Scan failed:", err);
@@ -267,8 +295,37 @@ async function handleScanRequest({ email, siteUrl, tier = "Free" }) {
       console.error("❌ Failed to send error report email:", mailErr.message);
     }
 
+    // --- Save failed submission record ---
+    const submissionsPath = path.join(__dirname, "submissions.json");
+    let submissions = [];
+    try {
+      if (fs.existsSync(submissionsPath)) {
+        submissions = JSON.parse(fs.readFileSync(submissionsPath));
+      }
+    } catch (readErr) {
+      submissions = [];
+    }
+
+    submissions.push({
+      id: reportId,
+      email,
+      siteUrl,
+      tier,
+      status: "Error",
+      reportFile: null,
+      timestamp: new Date().toISOString()
+    });
+
+    try {
+      fs.writeFileSync(submissionsPath, JSON.stringify(submissions, null, 2));
+      console.log(`📂 Failed submission logged for ${email} (${siteUrl})`);
+    } catch (writeErr) {
+      console.error("❌ Failed to save failed submission:", writeErr.message);
+    }
+
     return { summary, alerts: [] };
   }
 }
 
 module.exports = { handleScanRequest };
+
