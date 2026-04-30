@@ -20,7 +20,9 @@ Informational: ${summary.informational}
 
 Top Issues:
 ${summary.topIssues && summary.topIssues.length > 0 
-  ? summary.topIssues.map(i => `- ${i.name}: ${i.plainSummary}`).join("\n") 
+  ? summary.topIssues.map(i => 
+      `- ${i.name}: ${i.plainSummary}\n  Fix: ${i.fix}`
+    ).join("\n\n") 
   : "No major issues detected."}
 
 Thank you for using GardianX.
@@ -41,7 +43,7 @@ Thank you for using GardianX.
 
   const msg = {
     to: email,
-    from: `"GardianX Reports" <${process.env.SMTP_USER}>`, // use a verified sender in SendGrid
+    from: `"GardianX Reports" <${process.env.SMTP_USER}>`, // must be a verified sender in SendGrid
     subject: `GardianX Scan Report - ${siteUrl}`,
     text: plainSummary,
     attachments
