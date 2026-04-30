@@ -71,8 +71,8 @@ async function runHeaderScan(siteUrl) {
 
     const checks = [
       { key: "content-security-policy", name: "Content Security Policy (CSP) Header Not Set", risk: "High" },
-      { key: "strict-transport-security", name: "Strict-Transport-Security Header", risk: "Medium" },
-      { key: "x-frame-options", name: "Clickjacking Protection (X-Frame-Options)", risk: "Medium" },
+      { key: "strict-transport-security", name: "Strict-Transport-Security Header Not Set", risk: "Medium" },
+      { key: "x-frame-options", name: "Missing Anti-clickjacking Header", risk: "Medium" },
       { key: "x-content-type-options", name: "X-Content-Type-Options Header Missing", risk: "Low" },
       { key: "referrer-policy", name: "Referrer Policy", risk: "Low" },
     ];
@@ -215,7 +215,7 @@ async function handleScanRequest({ email, siteUrl, tier = "Free" }) {
       runContentScan(siteUrl),
     ]);
 
-    // ✅ Enrich alerts with fixes
+    // ✅ Enrich alerts with risk + fix guidance
     const alerts = [
       ...(zapResult.alerts || []),
       ...(sslResult || []),
@@ -224,7 +224,8 @@ async function handleScanRequest({ email, siteUrl, tier = "Free" }) {
       ...(contentResult || []),
     ].map(alert => ({
       ...alert,
-      fix: fixes[alert.name] || "No recommended fix available. Please consult documentation."
+      riskDetail: fixes[alert.name]?.risk || "No risk description available.",
+      fix: fixes[alert.name]?.fix || "No recommended fix available."
     }));
 
     const summary = {
