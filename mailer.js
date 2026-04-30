@@ -21,13 +21,15 @@ Informational: ${summary.informational}
 Top Issues:
 ${summary.topIssues && summary.topIssues.length > 0 
   ? summary.topIssues.map(i => {
-      const risk = i.risk.toLowerCase();
-      const fixLine = (risk === "high" || risk === "medium" || risk === "low")
-        ? `\n  Fix: ${i.fix}`
-        : "";
-      return `- ${i.name}: ${i.plainSummary}${fixLine}`;
+      return `- ${i.name}\n  Risk: ${i.riskDetail}\n  Fix: ${i.fix}`;
     }).join("\n\n") 
   : "No major issues detected."}
+
+${
+  tier === "Pro"
+    ? "\nAs a Pro user, the full detailed JSON report is attached to this email."
+    : "\nUpgrade to Pro to receive the full detailed JSON report as an attachment."
+}
 
 Thank you for using GardianX.
 `;
