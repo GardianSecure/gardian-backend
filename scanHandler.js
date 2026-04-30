@@ -5,6 +5,7 @@ const fs = require("fs");
 const path = require("path");
 const https = require("https");
 const fetch = require("node-fetch");
+const fixes = require("./fixes");   // ✅ Import fixes lookup
 
 function normalizeRisk(risk) {
   if (!risk) return "Informational";
@@ -69,10 +70,10 @@ async function runHeaderScan(siteUrl) {
     const headers = res.headers;
 
     const checks = [
-      { key: "content-security-policy", name: "Content Security Policy", risk: "High" },
-      { key: "strict-transport-security", name: "Strict Transport Security", risk: "Medium" },
+      { key: "content-security-policy", name: "Content Security Policy (CSP) Header Not Set", risk: "High" },
+      { key: "strict-transport-security", name: "Strict-Transport-Security Header", risk: "Medium" },
       { key: "x-frame-options", name: "Clickjacking Protection (X-Frame-Options)", risk: "Medium" },
-      { key: "x-content-type-options", name: "MIME Sniffing Protection", risk: "Low" },
+      { key: "x-content-type-options", name: "X-Content-Type-Options Header Missing", risk: "Low" },
       { key: "referrer-policy", name: "Referrer Policy", risk: "Low" },
     ];
 
@@ -214,13 +215,17 @@ async function handleScanRequest({ email, siteUrl, tier = "Free" }) {
       runContentScan(siteUrl),
     ]);
 
+    // ✅ Enrich alerts with fixes
     const alerts = [
       ...(zapResult.alerts || []),
       ...(sslResult || []),
       ...(headerResult || []),
       ...(dependencyResult || []),
       ...(contentResult || []),
-    ];
+    ].map(alert => ({
+      ...alert,
+      fix: fixes[alert.name] || "No recommended fix available. Please consult documentation."
+    }));
 
     const summary = {
       status: zapResult.status === "Error" ? "Error" : "Complete",
@@ -240,7 +245,6 @@ async function handleScanRequest({ email, siteUrl, tier = "Free" }) {
     await sendReportEmail(email, summary, reportId, siteUrl, tier);
     console.log(`✅ Report email sent to ${email} with status: ${summary.status}`);
 
-    // Always return structured response to frontend
     return { summary, alerts };
   } catch (err) {
     console.error("❌ Scan failed:", err);
@@ -262,7 +266,6 @@ async function handleScanRequest({ email, siteUrl, tier = "Free" }) {
       console.error("❌ Failed to send error report email:", mailErr.message);
     }
 
-    // Return error summary to frontend
     return { summary, alerts: [] };
   }
 }
