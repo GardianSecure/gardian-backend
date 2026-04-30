@@ -27,11 +27,9 @@ function launchZap() {
   "-config", "autoupdate.installAddonUpdates=false",
   "-nostdaddons",
   "-addoninstall", "pscanrules",
-  "-addoninstall", "ascanrules",
   "-addoninstall", "reports",
   "-addoninstall", "retire",
   "-addonuninstall", "selenium",
-  "-addonuninstall", "client",
   "-addonuninstall", "oast"
   // ⚠️ Do NOT uninstall callhome — leave it installed
 ];
