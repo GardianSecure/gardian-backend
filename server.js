@@ -52,7 +52,7 @@ app.post("/scan", async (req, res) => {
   if (!email || !siteUrl) return res.status(400).json({ error: "Missing email or siteUrl" });
 
   const submissions = loadSubmissions();
-  const submission = { id: Date.now().toString(), email, siteUrl, tier, status: "Pending" };
+  const submission = { id: Date.now().toString(), email, siteUrl, tier, status: "Pending", timestamp: new Date().toISOString() };
   submissions.push(submission);
   saveSubmissions(submissions);
 
@@ -95,6 +95,7 @@ app.post("/rescan/:id", async (req, res) => {
     const { summary, alerts } = await handleScanRequest(submission);
     submission.status = summary.status;
     submission.summary = summary;
+    submission.timestamp = new Date().toISOString();
     saveSubmissions(submissions);
 
     res.json({ message: "Rescan complete", id: submission.id, summary, alerts });
@@ -133,6 +134,29 @@ app.get("/stats", (req, res) => {
     averageFindings,
     riskDistribution: riskCounts
   });
+});
+
+// ✅ Upgrade to Pro
+app.post("/upgrade", (req, res) => {
+  const { email } = req.body;
+  if (!email) return res.status(400).json({ error: "Missing email" });
+
+  const submissions = loadSubmissions();
+  let updated = false;
+
+  submissions.forEach(sub => {
+    if (sub.email === email) {
+      sub.tier = "Pro";
+      updated = true;
+    }
+  });
+
+  if (updated) {
+    saveSubmissions(submissions);
+    res.json({ message: `✅ User ${email} upgraded to Pro` });
+  } else {
+    res.status(404).json({ error: "User not found in submissions" });
+  }
 });
 
 // Start server
