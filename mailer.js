@@ -20,9 +20,13 @@ Informational: ${summary.informational}
 
 Top Issues:
 ${summary.topIssues && summary.topIssues.length > 0 
-  ? summary.topIssues.map(i => 
-      `- ${i.name}: ${i.plainSummary}\n  Fix: ${i.fix}`
-    ).join("\n\n") 
+  ? summary.topIssues.map(i => {
+      const risk = i.risk.toLowerCase();
+      const fixLine = (risk === "high" || risk === "medium" || risk === "low")
+        ? `\n  Fix: ${i.fix}`
+        : "";
+      return `- ${i.name}: ${i.plainSummary}${fixLine}`;
+    }).join("\n\n") 
   : "No major issues detected."}
 
 Thank you for using GardianX.
