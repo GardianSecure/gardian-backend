@@ -1,4 +1,5 @@
 // server.js
+const cors = require("cors");
 const express = require("express");
 const bodyParser = require("body-parser");
 const fs = require("fs");
@@ -6,6 +7,14 @@ const path = require("path");
 const { handleScanRequest } = require("./scanHandler");
 
 const app = express();
+
+// ✅ Enable CORS for your Netlify frontend
+app.use(cors({
+  origin: "https://gardian.netlify.app",   // allow requests from your frontend
+  methods: ["GET", "POST"],
+  allowedHeaders: ["Content-Type"]
+}));
+
 app.use(bodyParser.json());
 
 const submissionsFile = path.join(__dirname, "submissions.json");
