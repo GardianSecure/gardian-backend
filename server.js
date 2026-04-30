@@ -69,12 +69,12 @@ app.post("/scan", async (req, res) => {
   }
 });
 
-// List submissions
-app.get("/submissions", (req, res) => {
+// List submissions (frontend dashboard will call this)
+app.get("/api/submissions", (req, res) => {
   res.json(loadSubmissions());
 });
 
-// Fetch report
+// Fetch report by ID
 app.get("/reports/:id", (req, res) => {
   const reportPath = path.join(__dirname, "reports", `report-${req.params.id}.json`);
   if (!fs.existsSync(reportPath)) {
@@ -83,7 +83,7 @@ app.get("/reports/:id", (req, res) => {
   res.sendFile(reportPath);
 });
 
-// Rescan
+// Rescan existing submission
 app.post("/rescan/:id", async (req, res) => {
   const submissions = loadSubmissions();
   const submission = submissions.find(s => s.id === req.params.id);
@@ -106,7 +106,7 @@ app.post("/rescan/:id", async (req, res) => {
   }
 });
 
-// Stats endpoint
+// Stats endpoint (for dashboard charts)
 app.get("/stats", (req, res) => {
   const submissions = loadSubmissions();
   if (submissions.length === 0) {
